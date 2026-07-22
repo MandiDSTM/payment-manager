@@ -1,7 +1,7 @@
 import React from 'react';
-import axios from 'axios';
+import api from '../api';
 
-const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds }) => {
+const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds, canSelect = true }) => {
   
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -13,7 +13,7 @@ const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds }
 
   const handleCellEdit = async (id, field, value) => {
     try {
-      await axios.patch(`http://localhost:5000/api/payments/${id}/update-field`, { field, value });
+      await api.patch(`/payments/${id}/update-field`, { field, value });
       fetchData(); 
     } catch (err) {
       console.error("Save failed:", err);
@@ -59,9 +59,11 @@ const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds }
       <table className="w-full text-sm text-right border-collapse">
         <thead className="bg-slate-100 text-slate-600 border-b border-slate-300">
           <tr>
-            <th className="p-3 w-10 text-center">
-              <input type="checkbox" onChange={toggleSelectAll} checked={data.length > 0 && selectedIds.length === data.length} />
-            </th>
+            {canSelect && (
+              <th className="p-3 w-10 text-center">
+                <input type="checkbox" onChange={toggleSelectAll} checked={data.length > 0 && selectedIds.length === data.length} />
+              </th>
+            )}
             <th className="p-3 border-l text-center">کد پرسنلی</th>
             <th className="p-3 border-l text-center">نام</th>
             <th className="p-3 border-l text-center">نام خانوادگی</th>
@@ -76,9 +78,11 @@ const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds }
         <tbody className="divide-y divide-slate-200">
           {data.map((item, rowIndex) => (
             <tr key={item.id} className={`${selectedIds.includes(item.id) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-              <td className="p-2 text-center border-l">
-                <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
-              </td>
+              {canSelect && (
+                <td className="p-2 text-center border-l">
+                  <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
+                </td>
+              )}
 
               {[
                 { field: 'personnel_code', value: item.personnel_code, type: 'text' },
