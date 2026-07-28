@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   getAuthToken,
   getCurrentUser,
@@ -18,19 +18,39 @@ import PersonnelContactsPage from './pages/PersonnelContactsPage';
 import PermissionSerialsPage from './pages/PermissionSerialsPage';
 import ExcelOperationsPage from './pages/ExcelOperationsPage';
 import UsersPage from './pages/UsersPage';
+import ThemePicker from './components/ui/ThemePicker';
+import { Button } from './components/ui';
 
-const TABS = [
-  { id: 'payments', label: 'پرداخت‌ها', icon: '💰' },
-  { id: 'excel', label: 'Excel', icon: '📊' },
-  { id: 'permission-serials', label: 'مجوز پرداخت', icon: '🔐' },
-  { id: 'commercial-payments', label: 'پرداخت‌های تجاری', icon: '🛒' },
-  { id: 'machinery-payments', label: 'پرداخت ماشین‌آلات', icon: '🚧' },
-  { id: 'salary-payments', label: 'پرداخت حقوق', icon: '💼' },
-  { id: 'business', label: 'مخاطبین تجاری', icon: '🏢' },
-  { id: 'personnel', label: 'مخاطبین پرسنل', icon: '👤' },
-  { id: 'machines', label: 'ماشین‌ها', icon: '🚜' },
-  { id: 'machinery', label: 'مخاطبین ماشین‌آلات', icon: '👷' },
-  { id: 'users', label: 'کاربران', icon: '👥', adminOnly: true },
+const NAV_GROUPS = [
+  {
+    id: 'payments',
+    label: 'پرداخت‌ها',
+    items: [
+      { id: 'payments', label: 'عمومی', icon: '💰' },
+      { id: 'commercial-payments', label: 'تجاری', icon: '🛒' },
+      { id: 'machinery-payments', label: 'ماشین‌آلات', icon: '🚧' },
+      { id: 'salary-payments', label: 'حقوق', icon: '💼' },
+      { id: 'permission-serials', label: 'مجوز پرداخت', icon: '🔐' },
+      { id: 'excel', label: 'Excel', icon: '📊' },
+    ],
+  },
+  {
+    id: 'contacts',
+    label: 'مخاطبین',
+    items: [
+      { id: 'business', label: 'تجاری', icon: '🏢' },
+      { id: 'personnel', label: 'پرسنل', icon: '👤' },
+      { id: 'machines', label: 'ماشین‌ها', icon: '🚜' },
+      { id: 'machinery', label: 'مخاطبین ماشین', icon: '👷' },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'سیستم',
+    items: [
+      { id: 'users', label: 'کاربران', icon: '👥', adminOnly: true },
+    ],
+  },
 ];
 
 function App() {
@@ -67,6 +87,24 @@ function App() {
     return () => window.removeEventListener('auth:logout', onLogout);
   }, []);
 
+  const flatTabs = useMemo(() => {
+    return NAV_GROUPS.flatMap((g) => g.items).filter(
+      (tab) => !tab.adminOnly || user?.role === 'admin',
+    );
+  }, [user?.role]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey) return;
+      const num = Number(e.key);
+      if (!num || num < 1 || num > flatTabs.length) return;
+      e.preventDefault();
+      setActiveTab(flatTabs[num - 1].id);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [flatTabs]);
+
   const handleLoginSuccess = async () => {
     await refreshSession();
   };
@@ -79,8 +117,8 @@ function App() {
 
   if (booting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50" dir="rtl">
-        <p className="text-slate-500">در حال بارگذاری...</p>
+      <div className="ui-app-bg flex items-center justify-center" dir="rtl">
+        <p className="ui-muted">در حال بارگذاری...</p>
       </div>
     );
   }
@@ -88,8 +126,6 @@ function App() {
   if (!authenticated) {
     return <LoginPage onSuccess={handleLoginSuccess} />;
   }
-
-  const visibleTabs = TABS.filter((tab) => !tab.adminOnly || user?.role === 'admin');
 
   const renderPage = () => {
     switch (activeTab) {
@@ -121,41 +157,59 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-right" dir="rtl">
+    <div className="ui-app-bg p-4 md:p-8" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
-        <header className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 className="text-2xl font-black text-slate-800 border-r-4 border-blue-600 pr-3">
-              مدیریت مالی
-            </h1>
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2">
+        <header className="ui-card p-5 md:p-6 space-y-5">
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-black" style={{ color: 'var(--text)' }}>
+                مدیریت مالی
+              </h1>
+              <p className="text-sm ui-muted mt-1">ناوبری با Alt+عدد · فرم‌ها با Enter بین فیلدها</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <ThemePicker />
+              <div
+                className="text-sm rounded-xl px-4 py-2 border"
+                style={{
+                  background: 'var(--surface-2)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)',
+                }}
+              >
                 <span className="font-bold">{user?.name}</span>
-                <span className="text-slate-400 mx-2">|</span>
-                <span>{ROLES[user?.role]?.label || user?.role}</span>
+                <span className="ui-muted mx-2">|</span>
+                <span className="ui-muted">{ROLES[user?.role]?.label || user?.role}</span>
               </div>
-              <button type="button" onClick={handleLogout}
-                className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold">
-                خروج
-              </button>
+              <Button variant="secondary" onClick={handleLogout}>خروج</Button>
             </div>
           </div>
 
-          <nav className="flex flex-wrap gap-2 mt-6">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
+          <nav className="space-y-3">
+            {NAV_GROUPS.map((group) => {
+              const items = group.items.filter(
+                (tab) => !tab.adminOnly || user?.role === 'admin',
+              );
+              if (items.length === 0) return null;
+              return (
+                <div key={group.id} className="space-y-2">
+                  <p className="text-xs font-bold ui-muted px-1">{group.label}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {items.map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`ui-nav-btn ${activeTab === tab.id ? 'active' : ''}`}
+                      >
+                        <span className="ml-1">{tab.icon}</span>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </nav>
         </header>
 

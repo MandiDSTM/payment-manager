@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { login, ROLES } from '../api';
+import ThemePicker from '../components/ui/ThemePicker';
+import { Alert, Button, TextInput } from '../components/ui';
+import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 
 function LoginPage({ onSuccess }) {
   const [username, setUsername] = useState('');
@@ -7,8 +10,7 @@ function LoginPage({ onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submit = async () => {
     setLoading(true);
     setError('');
     try {
@@ -21,57 +23,61 @@ function LoginPage({ onSuccess }) {
     }
   };
 
+  const { setRef, handleKeyDown } = useFormKeyboardNav({
+    fieldCount: 2,
+    onSubmitLast: submit,
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await submit();
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 flex items-center justify-center p-4" dir="rtl">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 space-y-6">
+    <div className="ui-app-bg flex items-center justify-center p-4" dir="rtl">
+      <div className="w-full max-w-md ui-card p-8 space-y-6">
+        <div className="flex justify-end">
+          <ThemePicker />
+        </div>
+
         <div className="text-center space-y-2">
           <div className="text-4xl">🔐</div>
-          <h1 className="text-2xl font-black text-slate-800">ورود به سامانه</h1>
-          <p className="text-sm text-slate-500">مدیریت مالی</p>
+          <h1 className="text-2xl font-black" style={{ color: 'var(--text)' }}>ورود به سامانه</h1>
+          <p className="text-sm ui-muted">مدیریت مالی</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">نام کاربری</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="admin"
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1">رمز عبور</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="••••••"
-              autoComplete="current-password"
-              required
-            />
-          </div>
+          <TextInput
+            label="نام کاربری"
+            inputRef={setRef(0)}
+            onKeyDown={(e) => handleKeyDown(e, 0)}
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="admin"
+            autoComplete="username"
+            required
+          />
+          <TextInput
+            label="رمز عبور"
+            inputRef={setRef(1)}
+            onKeyDown={(e) => handleKeyDown(e, 1)}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••"
+            autoComplete="current-password"
+            required
+          />
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="error">{error}</Alert>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors"
-          >
+          <Button type="submit" disabled={loading} className="w-full py-3">
             {loading ? 'در حال ورود...' : 'ورود'}
-          </button>
+          </Button>
         </form>
 
-        <div className="text-xs text-slate-400 text-center space-y-1 border-t pt-4">
+        <div className="text-xs ui-muted text-center space-y-1 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
           <p>کاربر پیش‌فرض: <span className="font-mono">admin</span> / رمز: <span className="font-mono">123456</span></p>
           <p>نقش‌ها: {Object.values(ROLES).map((r) => r.label).join('، ')}</p>
         </div>

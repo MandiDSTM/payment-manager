@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api, { isAdmin } from '../api';
+import {
+  Button, Card, DataTable, PageHeader, SearchInput, SelectField, TextInput,
+} from '../components/ui';
+import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 
 const FIELDS = [
   { name: 'account_code', label: 'کد طرف حساب', required: true },
@@ -14,8 +18,7 @@ const FIELDS = [
   { name: 'description', label: 'توضیحات', required: false, fullWidth: true },
 ];
 
-const emptyForm = () =>
-  Object.fromEntries(FIELDS.map((f) => [f.name, '']));
+const emptyForm = () => Object.fromEntries(FIELDS.map((f) => [f.name, '']));
 
 function MachineryContactsPage() {
   const [contacts, setContacts] = useState([]);
@@ -26,6 +29,7 @@ function MachineryContactsPage() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const searchRef = useRef(null);
 
   const fetchData = async () => {
     try {
@@ -40,21 +44,22 @@ function MachineryContactsPage() {
     }
   };
 
+  useEffect(() => { fetchData(); }, []);
+
   useEffect(() => {
-    fetchData();
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const filtered = contacts.filter((c) => {
-    const text = [
-      c.account_code,
-      c.first_name,
-      c.last_name,
-      c.machine_name,
-      c.plate,
-      c.sheba,
-    ]
-      .join(' ')
-      .toLowerCase();
+    const text = [c.account_code, c.first_name, c.last_name, c.machine_name, c.plate, c.sheba]
+      .join(' ').toLowerCase();
     return text.includes(searchTerm.toLowerCase());
   });
 
@@ -80,7 +85,7 @@ function MachineryContactsPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     setLoading(true);
     const payload = { ...formData, machine_id: Number(formData.machine_id) };
     try {
@@ -99,6 +104,15 @@ function MachineryContactsPage() {
       setLoading(false);
     }
   };
+
+  const { setRef, handleKeyDown, focusFirst } = useFormKeyboardNav({
+    fieldCount: FIELDS.length,
+    onSubmitLast: handleSubmit,
+  });
+
+  useEffect(() => {
+    if (showForm) setTimeout(focusFirst, 50);
+  }, [showForm, focusFirst]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('آیا از حذف این مخاطب اطمینان دارید؟')) return;
@@ -140,175 +154,98 @@ function MachineryContactsPage() {
     }
   };
 
+  const columns = [
+    { key: 'account_code', header: 'کد طرف حساب' },
+    { key: 'first_name', header: 'نام' },
+    { key: 'last_name', header: 'نام خانوادگی' },
+    { key: 'machine_name', header: 'ماشین', render: (c) => c.machine_name || '—' },
+    { key: 'plate', header: 'پلاک', render: (c) => c.plate || '—' },
+    { key: 'sheba', header: 'شبا', render: (c) => <span className="font-mono text-xs">{c.sheba}</span> },
+    { key: 'account_holder_name', header: 'صاحب حساب' },
+  ];
+
+  if (isAdmin()) {
+    columns.push({
+      key: 'actions',
+      header: 'عملیات',
+      render: (c) => (
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => openEdit(c)}>ویرایش</Button>
+          <Button variant="danger" onClick={() => handleDelete(c.id)}>حذف</Button>
+        </div>
+      ),
+    });
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-700">مخاطبین ماشین‌آلات</h2>
-          <div className="flex flex-wrap gap-3">
-            {isAdmin() && (
-              <>
-                <button
-                  type="button"
-                  onClick={openCreate}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700"
-                >
-                  ➕ مخاطب جدید
-                </button>
-                <label
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm cursor-pointer ${
-                    uploading ? 'bg-slate-300' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}
-                >
-                  <span>{uploading ? 'در حال پردازش...' : '📤 آپلود اکسل'}</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".xlsx,.xls"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                  />
-                </label>
-              </>
-            )}
-          </div>
-        </div>
-        <input
-          type="text"
-          placeholder="جستجو در نام، کد طرف حساب، پلاک، شبا..."
-          className="w-full border border-slate-200 rounded-xl px-5 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+      <PageHeader
+        title="مخاطبین ماشین‌آلات"
+        description="Enter بین فیلدها · جستجو با Ctrl+K"
+        actions={isAdmin() && (
+          <>
+            <Button onClick={openCreate}>مخاطب جدید</Button>
+            <label className={`ui-btn ui-btn-primary cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
+              {uploading ? 'در حال پردازش...' : 'آپلود اکسل'}
+              <input type="file" className="hidden" accept=".xlsx,.xls" onChange={handleFileUpload} disabled={uploading} />
+            </label>
+          </>
+        )}
+      >
+        <SearchInput
+          inputRef={searchRef}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="جستجو در نام، کد طرف حساب، پلاک، شبا..."
         />
         {isAdmin() && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs ui-muted mt-2">
             ستون‌های اکسل: کد طرف حساب، نام، نام خانوادگی، نام ماشین، پلاک، شبا، نام صاحب حساب، موبایل، شهر، توضیحات
           </p>
         )}
-      </div>
+      </PageHeader>
 
       {showForm && isAdmin() && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-bold mb-4 text-slate-700">
-            {editingId ? 'ویرایش مخاطب' : 'ثبت مخاطب جدید'}
-          </h3>
+        <Card className="p-5 md:p-6 space-y-4">
+          <h3 className="text-lg font-bold">{editingId ? 'ویرایش مخاطب' : 'ثبت مخاطب جدید'}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {FIELDS.map((field) => (
-              <div key={field.name} className={field.fullWidth ? 'md:col-span-3' : ''}>
-                <label className="text-sm text-gray-600 mb-1 block">
-                  {field.label}
-                  {field.required && <span className="text-red-500"> *</span>}
-                </label>
-                {field.type === 'select' ? (
-                  <select
-                    value={formData[field.name]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, [field.name]: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-500 outline-none bg-white"
-                    required
-                  >
-                    <option value="">انتخاب ماشین...</option>
-                    {machines.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={formData[field.name]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, [field.name]: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-500 outline-none"
-                  />
-                )}
-              </div>
+            {FIELDS.map((field, index) => (
+              field.type === 'select' ? (
+                <SelectField
+                  key={field.name}
+                  label={`${field.label}${field.required ? ' *' : ''}`}
+                  className={field.fullWidth ? 'md:col-span-3' : ''}
+                  required={field.required}
+                  inputRef={setRef(index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  value={formData[field.name]}
+                  onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                >
+                  <option value="">انتخاب ماشین...</option>
+                  {machines.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </SelectField>
+              ) : (
+                <TextInput
+                  key={field.name}
+                  label={`${field.label}${field.required ? ' *' : ''}`}
+                  className={field.fullWidth ? 'md:col-span-3' : ''}
+                  inputRef={setRef(index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  value={formData[field.name]}
+                  onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                />
+              )
             ))}
             <div className="md:col-span-3 flex gap-3 mt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
-              >
-                {loading ? 'در حال ذخیره...' : 'ذخیره'}
-              </button>
-              <button
-                type="button"
-                onClick={closeForm}
-                className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg hover:bg-slate-300"
-              >
-                انصراف
-              </button>
+              <Button type="submit" disabled={loading}>{loading ? 'در حال ذخیره...' : 'ذخیره'}</Button>
+              <Button type="button" variant="secondary" onClick={closeForm}>انصراف</Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-right border-collapse">
-            <thead className="bg-slate-100 text-slate-600 border-b border-slate-300">
-              <tr>
-                <th className="p-3">کد طرف حساب</th>
-                <th className="p-3">نام</th>
-                <th className="p-3">نام خانوادگی</th>
-                <th className="p-3">ماشین</th>
-                <th className="p-3">پلاک</th>
-                <th className="p-3">شبا</th>
-                <th className="p-3">صاحب حساب</th>
-                {isAdmin() && <th className="p-3 w-28">عملیات</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={isAdmin() ? 8 : 7} className="p-8 text-center text-slate-400">
-                    مخاطبی یافت نشد
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50">
-                    <td className="p-3">{c.account_code}</td>
-                    <td className="p-3">{c.first_name}</td>
-                    <td className="p-3">{c.last_name}</td>
-                    <td className="p-3">{c.machine_name || '—'}</td>
-                    <td className="p-3">{c.plate || '—'}</td>
-                    <td className="p-3 font-mono text-xs">{c.sheba}</td>
-                    <td className="p-3">{c.account_holder_name}</td>
-                    {isAdmin() && (
-                      <td className="p-3">
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(c)}
-                            className="text-blue-600 hover:text-blue-800 text-xs font-bold"
-                          >
-                            ویرایش
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(c.id)}
-                            className="text-red-600 hover:text-red-800 text-xs font-bold"
-                          >
-                            حذف
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-4 py-2 text-xs text-slate-500 border-t">
-          {filtered.length} مخاطب
-        </div>
-      </div>
+      <DataTable columns={columns} rows={filtered} emptyText="مخاطبی یافت نشد" />
+      <p className="text-xs ui-muted px-1">{filtered.length} مخاطب</p>
     </div>
   );
 }

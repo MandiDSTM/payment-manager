@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api, { isAdmin, canEditCommercialPayment, isSelectablePermit } from '../api';
+import {
+  Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
+} from '../components/ui';
+import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
+import { formatAmount, statusBadgeClass } from '../utils/format';
 
 const STATUS_TABS = [
   { value: 'ثبت نشده', label: 'ثبت نشده' },
@@ -30,6 +35,7 @@ function CommercialPaymentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const searchRef = useRef(null);
 
   const fetchLookups = async () => {
     const [c, cat, ex, pr, se] = await Promise.all([
@@ -55,22 +61,24 @@ function CommercialPaymentsPage() {
     }
   };
 
+  useEffect(() => { fetchLookups(); }, []);
+  useEffect(() => { fetchPayments(); }, [activeStatus]);
+
   useEffect(() => {
-    fetchLookups();
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  useEffect(() => {
-    fetchPayments();
-  }, [activeStatus]);
-
   const availableSerials = useMemo(() => {
-    if (!editingId) {
-      return serials.filter((s) => isSelectablePermit(s.status));
-    }
+    if (!editingId) return serials.filter((s) => isSelectablePermit(s.status));
     const current = payments.find((p) => p.id === editingId);
-    return serials.filter(
-      (s) => isSelectablePermit(s.status) || s.id === current?.permission_serial_id,
-    );
+    return serials.filter((s) => isSelectablePermit(s.status) || s.id === current?.permission_serial_id);
   }, [serials, editingId, payments]);
 
   const previewDescription = useMemo(() => {
@@ -83,16 +91,8 @@ function CommercialPaymentsPage() {
   }, [formData, contacts, executors, projects, serials]);
 
   const filtered = payments.filter((p) => {
-    const text = [
-      p.business_name,
-      p.executor_name,
-      p.project_name,
-      p.serial_number,
-      p.description,
-      p.category_name,
-    ]
-      .join(' ')
-      .toLowerCase();
+    const text = [p.business_name, p.executor_name, p.project_name, p.serial_number, p.description, p.category_name]
+      .join(' ').toLowerCase();
     return text.includes(searchTerm.toLowerCase());
   });
 
@@ -123,7 +123,7 @@ function CommercialPaymentsPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     setLoading(true);
     try {
       if (editingId) {
@@ -142,6 +142,16 @@ function CommercialPaymentsPage() {
       setLoading(false);
     }
   };
+
+  const fieldCount = 7;
+  const { setRef, handleKeyDown, focusFirst } = useFormKeyboardNav({
+    fieldCount,
+    onSubmitLast: handleSubmit,
+  });
+
+  useEffect(() => {
+    if (showForm) setTimeout(focusFirst, 50);
+  }, [showForm, focusFirst]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('آیا از حذف این پرداخت اطمینان دارید؟')) return;
@@ -169,269 +179,125 @@ function CommercialPaymentsPage() {
     }
   };
 
+  const set = (key) => (e) => setFormData({ ...formData, [key]: e.target.value });
+
+  const columns = [
+    { key: 'business_name', header: 'مخاطب' },
+    { key: 'amount', header: 'مبلغ', render: (p) => <span className="ui-amount">{formatAmount(p.amount)}</span> },
+    { key: 'category_name', header: 'دسته' },
+    { key: 'executor_name', header: 'مجری' },
+    { key: 'project_name', header: 'پروژه' },
+    { key: 'serial_number', header: 'سریال' },
+    {
+      key: 'description',
+      header: 'توضیحات',
+      render: (p) => <span className="max-w-xs truncate inline-block" title={p.description}>{p.description}</span>,
+    },
+    { key: 'recorded_by_name', header: 'ثبت‌کننده', render: (p) => p.recorded_by_name || '—' },
+    {
+      key: 'receipt',
+      header: 'فیش',
+      render: (p) => (p.receipt_file_path ? (
+        <a href={`http://localhost:5000/${p.receipt_file_path}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>
+          مشاهده
+        </a>
+      ) : canEditCommercialPayment() ? (
+        <label className="cursor-pointer" style={{ color: 'var(--primary)' }}>
+          آپلود
+          <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleReceiptUpload(p.id, e.target.files[0])} />
+        </label>
+      ) : '—'),
+    },
+  ];
+
+  if (canEditCommercialPayment()) {
+    columns.push({
+      key: 'actions',
+      header: 'عملیات',
+      render: (p) => (
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => openEdit(p)}>ویرایش</Button>
+          {isAdmin() && <Button variant="danger" onClick={() => handleDelete(p.id)}>حذف</Button>}
+        </div>
+      ),
+    });
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-800">پرداخت‌های تجاری</h2>
-          {canEditCommercialPayment() && (
-            <button
-              type="button"
-              onClick={openCreate}
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700"
-            >
-              + ثبت پرداخت جدید
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => setActiveStatus(tab.value)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                activeStatus === tab.value
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <input
-          type="text"
-          placeholder="جستجو در پرداخت‌ها..."
-          className="w-full border border-slate-200 rounded-xl px-5 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+      <PageHeader
+        title="پرداخت‌های تجاری"
+        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K"
+        actions={canEditCommercialPayment() && <Button onClick={openCreate}>ثبت پرداخت جدید</Button>}
+      >
+        <StatusTabs tabs={STATUS_TABS} value={activeStatus} onChange={setActiveStatus} />
+        <SearchInput
+          inputRef={searchRef}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="جستجو در پرداخت‌ها..."
+          className="mt-3"
         />
-      </div>
+      </PageHeader>
 
       {showForm && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-bold mb-4">
-            {editingId ? 'ویرایش پرداخت' : 'ثبت پرداخت جدید'}
-          </h3>
+        <Card className="p-5 md:p-6 space-y-4">
+          <h3 className="text-lg font-bold">{editingId ? 'ویرایش پرداخت' : 'ثبت پرداخت جدید'}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="block text-sm">
-              مخاطب تجاری *
-              <select
-                required
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.business_contact_id}
-                onChange={(e) => setFormData({ ...formData, business_contact_id: e.target.value })}
-              >
-                <option value="">انتخاب کنید</option>
-                {contacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.business_name} ({c.account_code})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              مبلغ (ریال) *
-              <input
-                required
-                type="number"
-                min="1"
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              />
-            </label>
-
-            <label className="block text-sm">
-              دسته‌بندی پرداخت *
-              <select
-                required
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.category_id}
-                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              >
-                <option value="">انتخاب کنید</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              نام مجری *
-              <select
-                required
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.executor_id}
-                onChange={(e) => setFormData({ ...formData, executor_id: e.target.value })}
-              >
-                <option value="">انتخاب کنید</option>
-                {executors.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              پروژه *
-              <select
-                required
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.project_id}
-                onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-              >
-                <option value="">انتخاب کنید</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              سریال مجوز پرداخت *
-              <select
-                required
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.permission_serial_id}
-                onChange={(e) => setFormData({ ...formData, permission_serial_id: e.target.value })}
-              >
-                <option value="">انتخاب کنید</option>
-                {availableSerials.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.serial_number} {s.status === 'پرداخت شده' && s.id === Number(formData.permission_serial_id) ? '(فعلی)' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              وضعیت پرداخت
-              <select
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              >
-                {STATUS_TABS.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <div className="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
-              <span className="font-bold text-slate-600">توضیحات (خودکار): </span>
+            <SelectField label="مخاطب تجاری *" required inputRef={setRef(0)} onKeyDown={(e) => handleKeyDown(e, 0)}
+              value={formData.business_contact_id} onChange={set('business_contact_id')}>
+              <option value="">انتخاب کنید</option>
+              {contacts.map((c) => <option key={c.id} value={c.id}>{c.business_name} ({c.account_code})</option>)}
+            </SelectField>
+            <TextInput label="مبلغ (ریال) *" required type="number" min="1" inputRef={setRef(1)}
+              onKeyDown={(e) => handleKeyDown(e, 1)} value={formData.amount} onChange={set('amount')} />
+            <SelectField label="دسته‌بندی پرداخت *" required inputRef={setRef(2)} onKeyDown={(e) => handleKeyDown(e, 2)}
+              value={formData.category_id} onChange={set('category_id')}>
+              <option value="">انتخاب کنید</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </SelectField>
+            <SelectField label="نام مجری *" required inputRef={setRef(3)} onKeyDown={(e) => handleKeyDown(e, 3)}
+              value={formData.executor_id} onChange={set('executor_id')}>
+              <option value="">انتخاب کنید</option>
+              {executors.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </SelectField>
+            <SelectField label="پروژه *" required inputRef={setRef(4)} onKeyDown={(e) => handleKeyDown(e, 4)}
+              value={formData.project_id} onChange={set('project_id')}>
+              <option value="">انتخاب کنید</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </SelectField>
+            <SelectField label="سریال مجوز پرداخت *" required inputRef={setRef(5)} onKeyDown={(e) => handleKeyDown(e, 5)}
+              value={formData.permission_serial_id} onChange={set('permission_serial_id')}>
+              <option value="">انتخاب کنید</option>
+              {availableSerials.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.serial_number}{s.status === 'پرداخت شده' && s.id === Number(formData.permission_serial_id) ? ' (فعلی)' : ''}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="وضعیت پرداخت" inputRef={setRef(6)} onKeyDown={(e) => handleKeyDown(e, 6)}
+              value={formData.status} onChange={set('status')}>
+              {STATUS_TABS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </SelectField>
+            <div className="md:col-span-2 rounded-xl p-4 text-sm border" style={{ background: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+              <span className="font-bold">توضیحات (خودکار): </span>
               {previewDescription || '—'}
             </div>
-
             <div className="md:col-span-2 flex gap-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold disabled:opacity-50"
-              >
-                {loading ? 'در حال ذخیره...' : 'ذخیره'}
-              </button>
-              <button
-                type="button"
-                onClick={closeForm}
-                className="bg-slate-200 text-slate-700 px-6 py-2 rounded-xl font-bold"
-              >
-                انصراف
-              </button>
+              <Button type="submit" disabled={loading}>{loading ? 'در حال ذخیره...' : 'ذخیره'}</Button>
+              <Button type="button" variant="secondary" onClick={closeForm}>انصراف</Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-slate-700">
-              <tr>
-                <th className="p-3 text-right">مخاطب</th>
-                <th className="p-3 text-right">مبلغ</th>
-                <th className="p-3 text-right">دسته</th>
-                <th className="p-3 text-right">مجری</th>
-                <th className="p-3 text-right">پروژه</th>
-                <th className="p-3 text-right">سریال</th>
-                <th className="p-3 text-right">توضیحات</th>
-                <th className="p-3 text-right">ثبت‌کننده</th>
-                <th className="p-3 text-right">فیش</th>
-                {canEditCommercialPayment() && <th className="p-3 text-right">عملیات</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="p-8 text-center text-slate-400">
-                    پرداختی در این وضعیت یافت نشد
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((p) => (
-                  <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="p-3">{p.business_name}</td>
-                    <td className="p-3">{Number(p.amount).toLocaleString('fa-IR')}</td>
-                    <td className="p-3">{p.category_name}</td>
-                    <td className="p-3">{p.executor_name}</td>
-                    <td className="p-3">{p.project_name}</td>
-                    <td className="p-3">{p.serial_number}</td>
-                    <td className="p-3 max-w-xs truncate" title={p.description}>{p.description}</td>
-                    <td className="p-3">{p.recorded_by_name || '—'}</td>
-                    <td className="p-3">
-                      {p.receipt_file_path ? (
-                        <a
-                          href={`http://localhost:5000/${p.receipt_file_path}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          مشاهده
-                        </a>
-                      ) : canEditCommercialPayment() ? (
-                        <label className="text-indigo-600 cursor-pointer hover:underline">
-                          آپلود
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*,.pdf"
-                            onChange={(e) => handleReceiptUpload(p.id, e.target.files[0])}
-                          />
-                        </label>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    {canEditCommercialPayment() && (
-                      <td className="p-3 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(p)}
-                          className="text-blue-600 hover:underline ml-2"
-                        >
-                          ویرایش
-                        </button>
-                        {isAdmin() && (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(p.id)}
-                            className="text-red-600 hover:underline"
-                          >
-                            حذف
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable columns={columns} rows={filtered} emptyText="پرداختی در این وضعیت یافت نشد" />
+      {filtered.length > 0 && (
+        <p className="text-xs ui-muted px-1">
+          وضعیت فعلی: <span className={statusBadgeClass(activeStatus)}>{activeStatus}</span>
+          {' · '}{filtered.length} مورد
+        </p>
+      )}
     </div>
   );
 }

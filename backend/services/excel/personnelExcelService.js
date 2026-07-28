@@ -148,7 +148,10 @@ const getTemplateBuffer = () => buildWorkbookBuffer('پرسنل', [{
     'موبایل': '09121234567',
     'شهر': 'تهران',
     'توضیحات': '',
-}]);
+}], {
+    title: 'قالب ورود پرسنل',
+    showMeta: false,
+});
 
 module.exports = {
     parseImport,

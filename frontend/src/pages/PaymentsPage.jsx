@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
+import React, { useState, useEffect, useRef } from 'react';
 import api, { canCreatePayment, isAdmin } from '../api';
 import SmartForm from '../components/SmartForm';
 import PaymentTable from '../components/PaymentTable';
+import { downloadFormattedExcel, formatExportDate } from '../utils/excelExport';
+import { Button, Card, PageHeader, SearchInput } from '../components/ui';
 
 function PaymentsPage() {
   const [allData, setAllData] = useState([]);
@@ -11,6 +12,7 @@ function PaymentsPage() {
   const [uploading, setUploading] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isLocked, setIsLocked] = useState(true);
+  const searchRef = useRef(null);
 
   const fetchData = async () => {
     try {
@@ -25,23 +27,28 @@ function PaymentsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   useEffect(() => {
     const filtered = allData.filter((item) => {
       const fullName = `${item.first_name || ''} ${item.last_name || ''}`;
       const serial = String(item.serial || '');
       const sheba = String(item.sheba || '');
-      return (
-        fullName.includes(searchTerm) ||
-        serial.includes(searchTerm) ||
-        sheba.includes(searchTerm)
-      );
+      return fullName.includes(searchTerm) || serial.includes(searchTerm) || sheba.includes(searchTerm);
     });
     setFilteredData(filtered);
   }, [searchTerm, allData]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const clearAllData = async () => {
     if (!window.confirm('آیا از حذف تمامی اطلاعات دیتابیس اطمینان دارید؟ این عمل غیرقابل بازگشت است.')) return;
@@ -81,14 +88,10 @@ function PaymentsPage() {
       بابت: item.subject,
       وضعیت: item.status,
     }));
-
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    if (!worksheet['!views']) worksheet['!views'] = [];
-    worksheet['!views'][0] = { RTL: true };
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Payments');
-    XLSX.writeFile(workbook, `Report_${Date.now()}.xlsx`);
+    const exportStamp = formatExportDate().replace(/[/:]/g, '-').replace(/\s+/g, '_');
+    downloadFormattedExcel('پرداخت‌ها', excelData, `Report_${exportStamp}.xlsx`, {
+      title: 'گزارش پرداخت‌های عمومی',
+    });
   };
 
   const saveManualRecord = async (data) => {
@@ -126,95 +129,55 @@ function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-700">پرداخت‌ها</h2>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+      <PageHeader
+        title="پرداخت‌های عمومی"
+        description="جستجو با Ctrl+K · ویرایش جدول با فلش‌ها و Enter"
+        actions={(
+          <>
             {isAdmin() && selectedIds.length > 0 && (
-              <button
-                type="button"
-                onClick={handleBulkComplete}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg animate-pulse"
-              >
-                ✅ تایید پرداخت ({selectedIds.length} مورد)
-              </button>
+              <Button onClick={handleBulkComplete}>تایید پرداخت ({selectedIds.length})</Button>
             )}
             {isAdmin() && (
-              <button
-                type="button"
-                onClick={() => setIsLocked(!isLocked)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm border ${
-                  isLocked
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'bg-green-600 text-white border-green-700'
-                }`}
-              >
-                {isLocked ? '🔒 دیتابیس قفل است' : '🔓 ویرایش آزاد'}
-              </button>
+              <Button variant={isLocked ? 'secondary' : 'primary'} onClick={() => setIsLocked(!isLocked)}>
+                {isLocked ? 'قفل است' : 'ویرایش آزاد'}
+              </Button>
             )}
-            <button
-              type="button"
-              onClick={exportToExcel}
-              className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-emerald-700 transition-all shadow-sm"
-            >
-              📥 خروجی اکسل
-            </button>
+            <Button variant="secondary" onClick={exportToExcel}>خروجی اکسل</Button>
             {canCreatePayment() && (
-              <label
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm cursor-pointer transition-all shadow-sm ${
-                  uploading ? 'bg-slate-300' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                }`}
-              >
-                <span>{uploading ? 'در حال پردازش...' : '📤 آپلود فایل'}</span>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                />
+              <label className={`ui-btn ui-btn-primary cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
+                {uploading ? 'در حال پردازش...' : 'آپلود فایل'}
+                <input type="file" className="hidden" accept=".xlsx,.xls" onChange={handleFileUpload} disabled={uploading} />
               </label>
             )}
             {isAdmin() && (
-              <button
-                type="button"
-                onClick={clearAllData}
-                className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-sm hover:bg-red-600 hover:text-white transition-all shadow-sm"
-              >
-                🗑️ پاکسازی
-              </button>
+              <Button variant="danger" onClick={clearAllData}>پاکسازی</Button>
             )}
-          </div>
-        </div>
-        <input
-          type="text"
-          placeholder="جستجو در بین نام‌ها، سریال‌ها یا شماره شبا..."
-          className="w-full border border-slate-200 rounded-xl px-5 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 transition-all"
+          </>
+        )}
+      >
+        <SearchInput
+          inputRef={searchRef}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="جستجو در نام‌ها، سریال‌ها یا شماره شبا..."
         />
-      </div>
+      </PageHeader>
 
       {canCreatePayment() && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-bold mb-4 text-slate-700 flex items-center gap-2">
-            <span className="w-2 h-6 bg-blue-500 rounded-full" />
-            ثبت رکورد جدید
-          </h3>
+        <Card className="p-5 md:p-6 space-y-4">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>ثبت رکورد جدید</h3>
           <SmartForm onSave={saveManualRecord} />
-        </div>
+        </Card>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
-        <PaymentTable
-          data={filteredData}
-          isLocked={isLocked || !isAdmin()}
-          fetchData={fetchData}
-          selectedIds={selectedIds}
-          setSelectedIds={setSelectedIds}
-          canSelect={isAdmin()}
-        />
-      </div>
+      <PaymentTable
+        data={filteredData}
+        isLocked={isLocked || !isAdmin()}
+        fetchData={fetchData}
+        selectedIds={selectedIds}
+        setSelectedIds={setSelectedIds}
+        canSelect={isAdmin()}
+      />
     </div>
   );
 }

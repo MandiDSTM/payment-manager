@@ -1,86 +1,99 @@
 import React from 'react';
 import api from '../api';
+import { formatAmount, statusBadgeClass } from '../utils/format';
 
 const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds, canSelect = true }) => {
-  
   const toggleSelect = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   };
 
   const toggleSelectAll = () => {
-    setSelectedIds(selectedIds.length === data.length ? [] : data.map(item => item.id));
+    setSelectedIds(selectedIds.length === data.length ? [] : data.map((item) => item.id));
   };
 
   const handleCellEdit = async (id, field, value) => {
     try {
       await api.patch(`/payments/${id}/update-field`, { field, value });
-      fetchData(); 
+      fetchData();
     } catch (err) {
-      console.error("Save failed:", err);
+      console.error('Save failed:', err);
     }
   };
 
-  // --- منطق حرکت با کیبورد ---
   const handleKeyDown = (e, rowIndex, colIndex) => {
     const rowCount = data.length;
-    const colCount = 8; // تعداد ستون‌های قابل ویرایش ما
-
+    const colCount = 8;
     let nextRow = rowIndex;
     let nextCol = colIndex;
 
     switch (e.key) {
       case 'ArrowDown':
-      case 'Enter': // اینتر هم مثل فلش پایین عمل کند
+      case 'Enter':
         nextRow = Math.min(rowIndex + 1, rowCount - 1);
         break;
       case 'ArrowUp':
         nextRow = Math.max(rowIndex - 1, 0);
         break;
-      case 'ArrowRight': // در حالت RTL، راست یعنی ستون قبلی
+      case 'ArrowRight':
         nextCol = Math.max(colIndex - 1, 0);
         break;
-      case 'ArrowLeft': // در حالت RTL، چپ یعنی ستون بعدی
+      case 'ArrowLeft':
         nextCol = Math.min(colIndex + 1, colCount - 1);
         break;
       default:
-        return; // بقیه کلیدها (مثل حروف) کار خودشان را بکنند
+        return;
     }
 
-    e.preventDefault(); // جلوگیری از اسکرول صفحه با کلیدهای فلش
+    e.preventDefault();
     const nextInput = document.getElementById(`input-${nextRow}-${nextCol}`);
     if (nextInput) {
       nextInput.focus();
-      nextInput.select(); // متن داخل سلول را انتخاب کن تا آماده تایپ باشد
+      nextInput.select();
     }
   };
 
+  if (data.length === 0) {
+    return <div className="ui-empty">موردی یافت نشد</div>;
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm text-right border-collapse">
-        <thead className="bg-slate-100 text-slate-600 border-b border-slate-300">
+    <div className="ui-table-wrap">
+      <table className="ui-table">
+        <thead>
           <tr>
             {canSelect && (
-              <th className="p-3 w-10 text-center">
-                <input type="checkbox" onChange={toggleSelectAll} checked={data.length > 0 && selectedIds.length === data.length} />
+              <th className="w-10 text-center">
+                <input
+                  type="checkbox"
+                  onChange={toggleSelectAll}
+                  checked={data.length > 0 && selectedIds.length === data.length}
+                />
               </th>
             )}
-            <th className="p-3 border-l text-center">کد پرسنلی</th>
-            <th className="p-3 border-l text-center">نام</th>
-            <th className="p-3 border-l text-center">نام خانوادگی</th>
-            <th className="p-3 border-l text-center">تاریخ</th>
-            <th className="p-3 border-l text-center">مبلغ (ریال)</th>
-            <th className="p-3 border-l text-center">سریال</th>
-            <th className="p-3 border-l text-center">شبا</th>
-            <th className="p-3 border-l text-center">بابت</th>
-            <th className="p-3 text-center">وضعیت</th>
+            <th className="text-center">کد پرسنلی</th>
+            <th className="text-center">نام</th>
+            <th className="text-center">نام خانوادگی</th>
+            <th className="text-center">تاریخ</th>
+            <th className="text-center">مبلغ (ریال)</th>
+            <th className="text-center">سریال</th>
+            <th className="text-center">شبا</th>
+            <th className="text-center">بابت</th>
+            <th className="text-center">وضعیت</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200">
+        <tbody>
           {data.map((item, rowIndex) => (
-            <tr key={item.id} className={`${selectedIds.includes(item.id) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+            <tr
+              key={item.id}
+              style={selectedIds.includes(item.id) ? { background: 'var(--primary-soft)' } : undefined}
+            >
               {canSelect && (
-                <td className="p-2 text-center border-l">
-                  <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
+                <td className="text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(item.id)}
+                    onChange={() => toggleSelect(item.id)}
+                  />
                 </td>
               )}
 
@@ -89,31 +102,31 @@ const PaymentTable = ({ data, isLocked, fetchData, selectedIds, setSelectedIds, 
                 { field: 'first_name', value: item.first_name, type: 'text' },
                 { field: 'last_name', value: item.last_name, type: 'text' },
                 { field: 'date_shamsi', value: item.date_shamsi, type: 'text' },
-                { field: 'amount', value: item.amount, type: 'number', className: 'font-bold text-blue-700' },
+                { field: 'amount', value: item.amount, type: 'number', amount: true },
                 { field: 'serial', value: item.serial, type: 'text' },
-                { field: 'sheba', value: item.sheba, type: 'text', className: 'font-mono text-[10px]' },
-                { field: 'subject', value: item.subject, type: 'text' }
+                { field: 'sheba', value: item.sheba, type: 'text', mono: true },
+                { field: 'subject', value: item.subject, type: 'text' },
               ].map((cell, colIndex) => (
-                <td key={cell.field} className={`p-1 border-l text-center ${cell.className || ''}`}>
+                <td key={cell.field} className="text-center">
                   {isLocked ? (
-                    <span className="px-2">{cell.field === 'amount' ? Number(cell.value).toLocaleString() : (cell.value || '---')}</span>
+                    <span className={cell.amount ? 'ui-amount' : cell.mono ? 'font-mono text-[10px]' : ''}>
+                      {cell.amount ? formatAmount(cell.value) : (cell.value || '—')}
+                    </span>
                   ) : (
                     <input
-                      id={`input-${rowIndex}-${colIndex}`} // آدرس‌دهی سلول برای ناوبری
+                      id={`input-${rowIndex}-${colIndex}`}
                       type={cell.type}
                       defaultValue={cell.value}
                       onBlur={(e) => handleCellEdit(item.id, cell.field, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, rowIndex, colIndex)}
-                      className="w-full bg-white border border-transparent hover:border-blue-200 rounded px-1 py-1 text-center focus:bg-blue-50 focus:border-blue-500 outline-none transition-all"
+                      className="ui-input text-center py-1 px-1"
                     />
                   )}
                 </td>
               ))}
 
-              <td className="p-2 text-center">
-                <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.status === 'تکمیل شده' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {item.status}
-                </span>
+              <td className="text-center">
+                <span className={statusBadgeClass(item.status)}>{item.status}</span>
               </td>
             </tr>
           ))}

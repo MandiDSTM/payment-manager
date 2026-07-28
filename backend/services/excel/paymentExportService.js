@@ -100,7 +100,9 @@ const toExportRow = (p) => ({
 
 const exportPaymentsList = async () => {
     const payments = await fetchAllPayments();
-    return buildWorkbookBuffer('لیست پرداخت‌ها', payments.map(toExportRow));
+    return buildWorkbookBuffer('لیست پرداخت‌ها', payments.map(toExportRow), {
+        title: 'گزارش لیست پرداخت‌ها',
+    });
 };
 
 const groupAndExport = async (key, label) => {
@@ -116,7 +118,9 @@ const groupAndExport = async (key, label) => {
         groups[groupKey]['جمع مبلغ'] += Number(p.amount) || 0;
     });
 
-    return buildWorkbookBuffer(`گزارش ${label}`, Object.values(groups));
+    return buildWorkbookBuffer(`گزارش ${label}`, Object.values(groups), {
+        title: `گزارش پرداخت‌ها بر اساس ${label}`,
+    });
 };
 
 const exportByProject = () => groupAndExport('project_name', 'پروژه');

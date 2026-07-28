@@ -138,7 +138,10 @@ const downloadTemplate = async (req, res) => {
                     'موبایل': '09121234567',
                     'شهر': 'تهران',
                     'توضیحات': '',
-                }]);
+                }], {
+                    title: 'قالب ورود مخاطبین ماشین',
+                    showMeta: false,
+                });
                 break;
             default:
                 return res.status(404).json({ message: 'قالب یافت نشد' });
