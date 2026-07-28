@@ -1,13 +1,40 @@
 const knex = require('knex');
 const path = require('path');
 
-const db = knex({
-  client: 'better-sqlite3',
-  connection: {
-    // فایل دیتابیس در پوشه اصلی backend ذخیره می‌شود
-    filename: path.join(__dirname, '../database.sqlite') 
+const DB_PATH = path.join(__dirname, '../database.sqlite');
+
+function createConnection() {
+  return knex({
+    client: 'better-sqlite3',
+    connection: {
+      filename: DB_PATH,
+    },
+    useNullAsDefault: true,
+  });
+}
+
+let db = createConnection();
+
+async function reconnect() {
+  await db.destroy();
+  db = createConnection();
+  return db;
+}
+
+function getDbPath() {
+  return DB_PATH;
+}
+
+const dbProxy = new Proxy(function knexProxy() {}, {
+  apply(_target, _thisArg, args) {
+    return db(...args);
   },
-  useNullAsDefault: true
+  get(_target, prop) {
+    if (prop === 'reconnect') return reconnect;
+    if (prop === 'getDbPath') return getDbPath;
+    const value = db[prop];
+    return typeof value === 'function' ? value.bind(db) : value;
+  },
 });
 
-module.exports = db;
+module.exports = dbProxy;

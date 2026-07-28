@@ -18,6 +18,7 @@ import PersonnelContactsPage from './pages/PersonnelContactsPage';
 import PermissionSerialsPage from './pages/PermissionSerialsPage';
 import ExcelOperationsPage from './pages/ExcelOperationsPage';
 import UsersPage from './pages/UsersPage';
+import BackupPage from './pages/BackupPage';
 import ThemePicker from './components/ui/ThemePicker';
 import { Button } from './components/ui';
 
@@ -49,6 +50,7 @@ const NAV_GROUPS = [
     label: 'سیستم',
     items: [
       { id: 'users', label: 'کاربران', icon: '👥', adminOnly: true },
+      { id: 'backup', label: 'پشتیبان‌گیری', icon: '💾', adminOnly: true },
     ],
   },
 ];
@@ -151,6 +153,8 @@ function App() {
         return <MachineryContactsPage />;
       case 'users':
         return <UsersPage />;
+      case 'backup':
+        return <BackupPage />;
       default:
         return <PaymentsPage />;
     }

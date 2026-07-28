@@ -14,6 +14,7 @@ const personnelContactsRoutes = require('./personnelContacts');
 const permissionSerialsRoutes = require('./permissionSerials');
 const excelRoutes = require('./excel');
 const lookupsRoutes = require('./lookups');
+const backupRoutes = require('./backup');
 
 const router = express.Router();
 
@@ -34,5 +35,6 @@ router.use(personnelContactsRoutes);
 router.use(permissionSerialsRoutes);
 router.use(excelRoutes);
 router.use(lookupsRoutes);
+router.use(backupRoutes);
 
 module.exports = router;
