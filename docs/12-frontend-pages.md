@@ -124,6 +124,7 @@ Lookups:
   - `POST /api/personnel-contacts`
   - `PUT /api/personnel-contacts/:id`
   - `DELETE /api/personnel-contacts/:id`
+  - ورود اکسل از همین صفحه: پیش‌نمایش + تأیید (`/excel/preview/personnel` و `/excel/confirm/personnel`)
 
 ---
 
@@ -143,8 +144,12 @@ Lookups:
 ---
 
 ## `ExcelOperationsPage`
-Import (admin فقط):
-- `POST /api/excel/import/personnel`
+Import پرسنل (admin):
+- آپلود → `POST /api/excel/preview/personnel`
+- مودال انتخاب با چک‌باکس → `POST /api/excel/confirm/personnel`
+- در خطای یکتایی کد پرسنلی/کد ملی، مودال باز می‌ماند و ردیف خطا هایلایت می‌شود
+
+سایر Import:
 - `POST /api/excel/import/personnel-bulk-update`
 - `POST /api/excel/import/machinery-contacts`
 
@@ -152,6 +157,7 @@ Download templates:
 - `GET /api/excel/template/:type`
 
 Export (read):
+- `GET /api/excel/export/personnel`
 - `GET /api/excel/export/payments`
 - `GET /api/excel/export/by-project`
 - `GET /api/excel/export/by-month`

@@ -3,13 +3,15 @@ import api, { isAdmin } from '../api';
 import {
   Button, Card, DataTable, PageHeader, SearchInput, TextInput,
 } from '../components/ui';
+import PersonnelExcelImport from '../components/PersonnelExcelImport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 
 const FIELDS = [
-  { name: 'personnel_code', label: 'شماره پرسنلی', required: true },
+  { name: 'personnel_code', label: 'شماره پرسنلی (خالی = خودکار)', required: false },
+  { name: 'national_id', label: 'کد ملی', required: true },
   { name: 'first_name', label: 'نام', required: true },
   { name: 'last_name', label: 'نام خانوادگی', required: true },
-  { name: 'sheba', label: 'شماره شبا', required: true },
+  { name: 'sheba', label: 'شماره شبا', required: false },
   { name: 'account_holder_name', label: 'نام صاحب حساب', required: true },
   { name: 'mobile', label: 'موبایل', required: false },
   { name: 'city', label: 'شهر', required: false },
@@ -18,6 +20,15 @@ const FIELDS = [
 
 const emptyForm = () => Object.fromEntries(FIELDS.map((f) => [f.name, '']));
 
+const downloadBlob = (data, filename) => {
+  const url = window.URL.createObjectURL(new Blob([data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.URL.revokeObjectURL(url);
+};
+
 function PersonnelContactsPage() {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +36,7 @@ function PersonnelContactsPage() {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const searchRef = useRef(null);
 
   const fetchContacts = async () => {
@@ -46,8 +58,20 @@ function PersonnelContactsPage() {
   }, []);
 
   const filtered = contacts.filter((c) =>
-    [c.personnel_code, c.first_name, c.last_name, c.sheba].join(' ').toLowerCase().includes(searchTerm.toLowerCase()),
+    [c.personnel_code, c.national_id, c.first_name, c.last_name, c.sheba].join(' ').toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get('/excel/export/personnel', { responseType: 'blob' });
+      downloadBlob(res.data, `personnel-${Date.now()}.xlsx`);
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'خطا در خروجی اکسل');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
@@ -77,8 +101,20 @@ function PersonnelContactsPage() {
 
   const columns = [
     { key: 'personnel_code', header: 'پرسنلی' },
+    { key: 'national_id', header: 'کد ملی', render: (c) => c.national_id || '—' },
     { key: 'name', header: 'نام', render: (c) => `${c.first_name} ${c.last_name}` },
-    { key: 'sheba', header: 'شبا', render: (c) => <span className="font-mono text-xs">{c.sheba}</span> },
+    {
+      key: 'sheba',
+      header: 'شبا',
+      render: (c) => (
+        <div>
+          <span className="font-mono text-xs">{c.sheba || '—'}</span>
+          {c.sheba_needs_review ? (
+            <div className="text-xs mt-1" style={{ color: '#b45309' }}>نیاز به اصلاح شبا</div>
+          ) : null}
+        </div>
+      ),
+    },
     { key: 'account_holder_name', header: 'صاحب حساب' },
   ];
 
@@ -109,11 +145,21 @@ function PersonnelContactsPage() {
     <div className="space-y-6">
       <PageHeader
         title="مخاطبین پرسنل"
-        description="Enter بین فیلدها · جستجو با Ctrl+K"
-        actions={isAdmin() && (
-          <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
-            پرسنل جدید
-          </Button>
+        description="Enter بین فیلدها · جستجو با Ctrl+K · ورود گروهی با اکسل"
+        actions={(
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button variant="secondary" onClick={handleExport} disabled={exporting}>
+              {exporting ? 'در حال آماده‌سازی...' : 'خروجی پرسنل'}
+            </Button>
+            {isAdmin() && (
+              <>
+                <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
+                  پرسنل جدید
+                </Button>
+                <PersonnelExcelImport variant="toolbar" onDone={fetchContacts} />
+              </>
+            )}
+          </div>
         )}
       >
         <SearchInput
@@ -122,6 +168,11 @@ function PersonnelContactsPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="جستجو..."
         />
+        {isAdmin() && (
+          <p className="text-xs ui-muted mt-2">
+            ستون‌های اکسل: کد پرسنلی، کد ملی، نام و نام خانوادگی پرسنل، شبا، نام صاحب حساب، شماره تماس، محل تولد
+          </p>
+        )}
       </PageHeader>
 
       {showForm && isAdmin() && (

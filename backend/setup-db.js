@@ -337,9 +337,11 @@ async function createPersonnelContactsTable() {
     await db.schema.createTable('personnel_contacts', (table) => {
       table.increments('id').primary();
       table.string('personnel_code').notNullable().unique();
+      table.string('national_id').nullable().unique();
       table.string('first_name').notNullable();
       table.string('last_name').notNullable();
       table.string('sheba').notNullable();
+      table.boolean('sheba_needs_review').notNullable().defaultTo(false);
       table.string('account_holder_name').notNullable();
       table.string('mobile');
       table.string('city');
@@ -349,6 +351,29 @@ async function createPersonnelContactsTable() {
     console.log("✅ جدول 'personnel_contacts' ساخته شد.");
   } else {
     console.log("ℹ️ جدول 'personnel_contacts' از قبل وجود دارد.");
+  }
+
+  await migratePersonnelNationalIdColumn();
+  await migratePersonnelShebaReviewColumn();
+}
+
+async function migratePersonnelNationalIdColumn() {
+  const hasNationalId = await db.schema.hasColumn('personnel_contacts', 'national_id');
+  if (!hasNationalId) {
+    await db.schema.alterTable('personnel_contacts', (table) => {
+      table.string('national_id').nullable().unique();
+    });
+    console.log("ℹ️ ستون national_id به personnel_contacts اضافه شد.");
+  }
+}
+
+async function migratePersonnelShebaReviewColumn() {
+  const hasFlag = await db.schema.hasColumn('personnel_contacts', 'sheba_needs_review');
+  if (!hasFlag) {
+    await db.schema.alterTable('personnel_contacts', (table) => {
+      table.boolean('sheba_needs_review').notNullable().defaultTo(false);
+    });
+    console.log("ℹ️ ستون sheba_needs_review به personnel_contacts اضافه شد.");
   }
 }
 

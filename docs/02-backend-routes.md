@@ -120,6 +120,8 @@
 در `backend/routes/excel.js`:
 - `GET /api/excel/logs` -> `excelController.getLogs`
 - `GET /api/excel/template/:type` -> `excelController.downloadTemplate`
+- `POST /api/excel/preview/personnel` -> `excelController.previewPersonnel`
+- `POST /api/excel/confirm/personnel` -> `excelController.confirmPersonnel`
 - `POST /api/excel/import/personnel` -> `excelController.importPersonnel`
 - `POST /api/excel/import/personnel-bulk-update` -> `excelController.importPersonnelBulkUpdate`
 - `POST /api/excel/import/machinery-contacts` -> `excelController.importMachineryContacts`
@@ -128,6 +130,7 @@
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth`
 - `GET /api/excel/export/by-executor` -> `excelController.exportByExecutor`
 - `GET /api/excel/export/by-serial` -> `excelController.exportBySerial`
+- `GET /api/excel/export/personnel` -> `excelController.exportPersonnel`
 
 ---
 

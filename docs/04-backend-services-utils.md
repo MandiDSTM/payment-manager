@@ -47,7 +47,9 @@
 - `backend/services/excelService.js`
   - parse اکسل برای `payments` عمومی/legacy (تشخیص ستون‌ها و ساخت رکورد)
 - `backend/services/excel/personnelExcelService.js`
-  - import پرسنل (validation دقیق + check تکراری بودن personnel_code)
+  - پشتیبانی از فایل‌های HR با هدر دو ردیفه و ستون‌های «نام و نام خانوادگی پرسنل»، «کد ملی»، «کد پرسنلی»
+  - `parsePreview` + `confirmImport` (مودال انتخاب قبل از ثبت)
+  - یکتایی `personnel_code` و `national_id` (داخل فایل و دیتابیس)
 - `backend/services/machineryContactsExcelService.js`
   - import مخاطبین ماشین‌آلات (resolve کردن `machine_id` از روی `machine name`)
 - `backend/services/excel/paymentExportService.js`

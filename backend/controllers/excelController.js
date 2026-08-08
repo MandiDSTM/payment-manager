@@ -49,6 +49,75 @@ const importPersonnel = async (req, res) => {
     }
 };
 
+const previewPersonnel = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'فایلی انتخاب نشده است' });
+
+        const { rows, warnings, missingColumns } = await personnelExcel.parsePreview(req.file.path);
+        res.json({
+            message: `${rows.length} ردیف خوانده شد`,
+            fileName: req.file.originalname,
+            warnings: warnings || [],
+            missingColumns: missingColumns || [],
+            rows,
+        });
+    } catch (error) {
+        const err = handleImportError(error);
+        res.status(err.status).json({ message: err.message });
+    } finally {
+        if (req.file?.path) fs.unlink(req.file.path, () => {});
+    }
+};
+
+const confirmPersonnel = async (req, res) => {
+    try {
+        const records = req.body?.records;
+        if (!Array.isArray(records) || records.length === 0) {
+            return res.status(400).json({ message: 'هیچ ردیفی برای ثبت انتخاب نشده است' });
+        }
+
+        const result = await personnelExcel.confirmImport(records, {
+            onlyFullyValid: Boolean(req.body?.onlyFullyValid),
+        });
+        if (result.aborted) {
+            return res.status(409).json({
+                message: 'ثبت انجام نشد؛ کد پرسنلی یا کد ملی تکراری است',
+                imported: 0,
+                failed: result.errors.length,
+                errors: result.errors,
+                aborted: true,
+            });
+        }
+
+        const log = await logExcelEvent({
+            operationType: 'import_personnel',
+            fileName: req.body?.fileName || null,
+            userId: resolveRecordedByUserId(req),
+            imported: result.inserted,
+            failed: 0,
+            errors: [],
+        });
+
+        res.json({
+            message: `${result.inserted} پرسنل با موفقیت ثبت شد`,
+            imported: result.inserted,
+            failed: 0,
+            errors: [],
+            aborted: false,
+            log,
+        });
+    } catch (error) {
+        if (error.message === 'NO_RECORDS_SELECTED') {
+            return res.status(400).json({ message: 'هیچ ردیفی برای ثبت انتخاب نشده است' });
+        }
+        if (error.message === 'NO_FULLY_VALID_RECORDS') {
+            return res.status(400).json({ message: 'هیچ ردیف کاملاً معتبری برای ثبت وجود ندارد' });
+        }
+        const err = handleImportError(error);
+        res.status(err.status).json({ message: err.message });
+    }
+};
+
 const importPersonnelBulkUpdate = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: 'فایلی انتخاب نشده است' });
@@ -198,6 +267,15 @@ const exportBySerial = async (_req, res) => {
     }
 };
 
+const exportPersonnel = async (_req, res) => {
+    try {
+        const buffer = await personnelExcel.exportPersonnelList();
+        sendExcelBuffer(res, buffer, `personnel-${Date.now()}.xlsx`);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 const getLogs = async (_req, res) => {
     try {
         const logs = await getRecentLogs();
@@ -209,6 +287,8 @@ const getLogs = async (_req, res) => {
 
 module.exports = {
     importPersonnel,
+    previewPersonnel,
+    confirmPersonnel,
     importPersonnelBulkUpdate,
     importMachineryContacts,
     downloadTemplate,
@@ -217,5 +297,6 @@ module.exports = {
     exportByMonth,
     exportByExecutor,
     exportBySerial,
+    exportPersonnel,
     getLogs,
 };

@@ -107,7 +107,7 @@
 ---
 
 ## `backend/controllers/personnelContactsController.js`
-- CRUD پرسنل
+- CRUD پرسنل (`personnel_code` و `national_id` یکتا)
 - حذف پرسنل اگر به `salary_payments` لینک باشد ممنوع است
 
 ---
@@ -132,6 +132,9 @@
 
 ## Excel
 ### `backend/controllers/excelController.js`
+- `previewPersonnel`, `confirmPersonnel`
+  - پیش‌نمایش ردیف‌ها بدون insert؛ سپس ثبت انتخاب‌شده‌ها
+  - در صورت تکراری بودن `کد پرسنلی` یا `کد ملی`: هیچ ردیفی ثبت نمی‌شود و خطا برمی‌گردد
 - `importPersonnel`, `importPersonnelBulkUpdate`, `importMachineryContacts`
   - parse با سرویس‌های اکسل
   - insert در جدول‌های مقصد

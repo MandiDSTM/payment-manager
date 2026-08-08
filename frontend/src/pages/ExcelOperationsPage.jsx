@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api, { isAdmin } from '../api';
 import { Alert, Button, Card, DataTable, PageHeader } from '../components/ui';
+import PersonnelExcelImport from '../components/PersonnelExcelImport';
 
 const downloadBlob = (data, filename) => {
   const url = window.URL.createObjectURL(new Blob([data]));
@@ -107,27 +108,26 @@ function ExcelOperationsPage() {
 
   useEffect(() => { fetchLogs(); }, []);
 
-  const logColumns = [
+  const logColumns = useMemo(() => [
     { key: 'operation_type', header: 'عملیات' },
     { key: 'file_name', header: 'فایل', render: (log) => log.file_name || '—' },
     { key: 'imported', header: 'موفق', render: (log) => <span style={{ color: 'var(--success)' }}>{log.imported}</span> },
     { key: 'failed', header: 'خطا', render: (log) => <span style={{ color: 'var(--danger)' }}>{log.failed}</span> },
     { key: 'created_at', header: 'زمان', render: (log) => <span className="text-xs">{log.created_at}</span> },
-  ];
+  ], []);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="ورود و خروج Excel"
-        description="اعتبارسنجی ستون‌ها، شبا و شماره پرسنلی هنگام ورود انجام می‌شود."
+        description="اعتبارسنجی ستون‌ها، شبا، کد پرسنلی و کد ملی هنگام ورود انجام می‌شود."
       />
 
       {isAdmin() && (
         <section className="space-y-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>ورود داده‌ها</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ImportCard title="ورود پرسنل" endpoint="/excel/import/personnel"
-              templateType="personnel" onDone={fetchLogs} />
+            <PersonnelExcelImport onDone={fetchLogs} />
             <ImportCard title="ویرایش گروهی پرسنل" endpoint="/excel/import/personnel-bulk-update"
               templateType="personnel" onDone={fetchLogs} />
             <ImportCard title="ورود ماشین‌آلات (مخاطبین)" endpoint="/excel/import/machinery-contacts"
@@ -139,6 +139,7 @@ function ExcelOperationsPage() {
       <section className="space-y-4">
         <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>خروجی گزارش‌ها</h3>
         <Card className="p-5 flex flex-wrap gap-3">
+          <ExportButton label="خروجی پرسنل" endpoint="/excel/export/personnel" />
           <ExportButton label="لیست پرداخت‌ها" endpoint="/excel/export/payments" />
           <ExportButton label="گزارش بر اساس پروژه" endpoint="/excel/export/by-project" />
           <ExportButton label="گزارش بر اساس ماه" endpoint="/excel/export/by-month" />
