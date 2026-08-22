@@ -1,0 +1,80 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: payment-manager-backend:latest
+    container_name: payment-manager-backend
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      HOST: 0.0.0.0
+      DB_PATH: /app/data/database.sqlite
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    volumes:
+      - backend_data:/app/data
+      - backend_uploads:/app/uploads
+    expose:
+      - "5000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - default
+      - shared_network
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: /api
+        VITE_FILE_ORIGIN: ""
+    image: payment-manager-frontend:latest
+    container_name: payment-manager-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - default
+      - shared_network
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  backend_data:
+  backend_uploads:
+
+networks:
+  shared_network:
+    external: true

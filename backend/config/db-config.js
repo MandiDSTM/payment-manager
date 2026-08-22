@@ -1,7 +1,9 @@
+const fs = require('fs');
 const knex = require('knex');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '../database.sqlite');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../database.sqlite');
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 function createConnection() {
   return knex({

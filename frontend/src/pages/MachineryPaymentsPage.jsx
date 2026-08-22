@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import api, { isAdmin, canEditCommercialPayment, isSelectablePermit } from '../api';
+import api, { isAdmin, canEditCommercialPayment, isSelectablePermit, fileUrl } from '../api';
 import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
@@ -225,7 +225,7 @@ function MachineryPaymentsPage() {
       key: 'receipt',
       header: 'فیش',
       render: (p) => (p.receipt_file_path ? (
-        <a href={`http://localhost:5000/${p.receipt_file_path}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>مشاهده</a>
+        <a href={fileUrl(p.receipt_file_path)} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>مشاهده</a>
       ) : canEditCommercialPayment() ? (
         <label className="cursor-pointer" style={{ color: 'var(--primary)' }}>
           آپلود

@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+database.sqlite
+database.sqlite-*
+uploads
+.git
+.gitignore
+*.md
+Dockerfile
+.dockerignore
+.env
+.env.*

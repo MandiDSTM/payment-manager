@@ -1,0 +1,26 @@
+# This block goes into the Caddyfile of the existing `caddy` container.
+# Caddy is the only reverse proxy: TLS, /api, /uploads, and the SPA.
+
+payment.example.com {
+	encode gzip
+
+	request_body {
+		max_size 50MB
+	}
+
+	handle /api* {
+		reverse_proxy payment-manager-backend:5000
+	}
+
+	handle /uploads* {
+		reverse_proxy payment-manager-backend:5000
+	}
+
+	handle /health {
+		reverse_proxy payment-manager-backend:5000
+	}
+
+	handle {
+		reverse_proxy payment-manager-frontend:80
+	}
+}
