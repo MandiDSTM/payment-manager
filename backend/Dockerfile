@@ -2,19 +2,32 @@ FROM node:22-bookworm-slim AS deps
 
 WORKDIR /app
 
-RUN apt-get update \
+ENV npm_config_build_from_source=true
+
+RUN rm -f /etc/apt/sources.list.d/debian.sources \
+    && printf '%s\n' \
+      'deb http://mirror.arvancloud.ir/debian bookworm main' \
+      'deb http://mirror.arvancloud.ir/debian-security bookworm-security main' \
+      > /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm config set registry https://package-mirror.liara.ir/repository/npm/ \
+    && npm ci --omit=dev
 
 
 FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-RUN apt-get update \
+RUN rm -f /etc/apt/sources.list.d/debian.sources \
+    && printf '%s\n' \
+      'deb http://mirror.arvancloud.ir/debian bookworm main' \
+      'deb http://mirror.arvancloud.ir/debian-security bookworm-security main' \
+      > /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends gosu \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /app/data /app/uploads/receipts \
