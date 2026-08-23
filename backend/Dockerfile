@@ -2,10 +2,11 @@ FROM node:22-bookworm AS deps
 
 WORKDIR /app
 
-ENV npm_config_build_from_source=true
+ENV npm_config_build_from_source=true \
+    npm_config_nodedir=/usr/local
 
 COPY package.json package-lock.json ./
-RUN npm config set registry https://package-mirror.liara.ir/repository/npm/ \
+RUN npm config set registry https://package-mirror.liara.ir/repository/npm/ --global \
     && npm ci --omit=dev
 
 
