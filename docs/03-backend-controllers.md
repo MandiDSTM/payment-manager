@@ -152,7 +152,9 @@
 - `downloadTemplate`
   - ساخت workbook قالب (با `utils/excelHelpers.js`) برای انواع import شامل پرداخت‌ها
 - `exportPayments` و گزارش‌های grouped
-  - خروجی اکسل از `services/excel/paymentExportService.js`
+  - خروجی ترکیبی همه انواع پرداخت از `services/excel/paymentExportService.js`
+- `exportGeneralPayments` / `exportCommercialPayments` / `exportMachineryPayments` / `exportSalaryPayments`
+  - خروجی جداگانه همه رکوردهای همان نوع (ستون وضعیت در فایل است؛ فیلتر تب صفحه اعمال نمی‌شود)
 - `getLogs`
   - برگرداندن لاگ‌های اخیر
 

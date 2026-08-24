@@ -4,6 +4,7 @@ import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
 import PaymentExcelImport from '../components/PaymentExcelImport';
+import PaymentExcelExport from '../components/PaymentExcelExport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount } from '../utils/format';
 
@@ -256,14 +257,22 @@ function MachineryPaymentsPage() {
       <PageHeader
         title="پرداخت ماشین‌آلات"
         description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
-        actions={canEditCommercialPayment() && (
+        actions={(
           <div className="flex flex-wrap gap-2 items-center">
-            <Button onClick={openCreate}>ثبت پرداخت جدید</Button>
-            <PaymentExcelImport
-              kind="machinery"
-              variant="toolbar"
-              onDone={() => { fetchPayments(); fetchLookups(); }}
+            <PaymentExcelExport
+              endpoint="/excel/export/payments/machinery"
+              filenamePrefix="payments-machinery"
             />
+            {canEditCommercialPayment() && (
+              <>
+                <Button onClick={openCreate}>ثبت پرداخت جدید</Button>
+                <PaymentExcelImport
+                  kind="machinery"
+                  variant="toolbar"
+                  onDone={() => { fetchPayments(); fetchLookups(); }}
+                />
+              </>
+            )}
           </div>
         )}
       >

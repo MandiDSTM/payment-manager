@@ -134,7 +134,11 @@
 - `POST /api/excel/confirm/machinery-payments` -> `excelController.confirmMachineryPayments` (admin/accountant)
 - `POST /api/excel/preview/salary-payments` -> `excelController.previewSalaryPayments` (admin/accountant)
 - `POST /api/excel/confirm/salary-payments` -> `excelController.confirmSalaryPayments` (admin/accountant)
-- `GET /api/excel/export/payments` -> `excelController.exportPayments`
+- `GET /api/excel/export/payments` -> `excelController.exportPayments` (همه انواع در یک فایل)
+- `GET /api/excel/export/payments/general` -> `excelController.exportGeneralPayments`
+- `GET /api/excel/export/payments/commercial` -> `excelController.exportCommercialPayments`
+- `GET /api/excel/export/payments/machinery` -> `excelController.exportMachineryPayments`
+- `GET /api/excel/export/payments/salary` -> `excelController.exportSalaryPayments`
 - `GET /api/excel/export/by-project` -> `excelController.exportByProject`
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth`
 - `GET /api/excel/export/by-executor` -> `excelController.exportByExecutor`

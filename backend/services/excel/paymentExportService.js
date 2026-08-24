@@ -128,10 +128,186 @@ const exportByMonth = () => groupAndExport('month', 'ماه');
 const exportByExecutor = () => groupAndExport('executor_name', 'مجری');
 const exportBySerial = () => groupAndExport('serial_number', 'سریال مجوز');
 
+const formatDate = (value) => {
+    if (!value) return '';
+    try {
+        return new Intl.DateTimeFormat('fa-IR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(new Date(value));
+    } catch {
+        return String(value);
+    }
+};
+
+const exportGeneralPayments = async () => {
+    const rows = await db('payments').select('*').orderBy('id', 'desc');
+    return buildWorkbookBuffer('پرداخت عمومی', rows.map((p, index) => ({
+        'ردیف': index + 1,
+        'کد پرسنلی': p.personnel_code || '',
+        'نام': p.first_name || '',
+        'نام خانوادگی': p.last_name || '',
+        'تاریخ': p.date_shamsi || '',
+        'مبلغ': p.amount || 0,
+        'سریال': p.serial || '',
+        'شماره شبا': p.sheba || '',
+        'بابت': p.subject || '',
+        'توضیحات': p.description || '',
+        'وضعیت': p.status || '',
+        'تاریخ ثبت': formatDate(p.created_at),
+    })), {
+        title: 'خروجی پرداخت‌های عمومی',
+        textColumns: ['کد پرسنلی', 'سریال', 'شماره شبا', 'تاریخ'],
+    });
+};
+
+const exportCommercialPayments = async () => {
+    const rows = await db('commercial_payments as p')
+        .leftJoin('business_contacts as c', 'p.business_contact_id', 'c.id')
+        .leftJoin('commercial_payment_categories as cat', 'p.category_id', 'cat.id')
+        .leftJoin('executors as e', 'p.executor_id', 'e.id')
+        .leftJoin('projects as pr', 'p.project_id', 'pr.id')
+        .leftJoin('payment_permission_serials as s', 'p.permission_serial_id', 's.id')
+        .leftJoin('users as u', 'p.recorded_by_user_id', 'u.id')
+        .select(
+            'p.amount',
+            'p.status',
+            'p.description',
+            'p.created_at',
+            'c.account_code',
+            'c.business_name',
+            'cat.name as category_name',
+            'e.name as executor_name',
+            'pr.name as project_name',
+            's.serial_number',
+            'u.name as recorded_by_name',
+        )
+        .orderBy('p.id', 'desc');
+
+    return buildWorkbookBuffer('پرداخت تجاری', rows.map((p, index) => ({
+        'ردیف': index + 1,
+        'کد طرف حساب': p.account_code || '',
+        'نام تجاری': p.business_name || '',
+        'مبلغ': p.amount || 0,
+        'دسته‌بندی': p.category_name || '',
+        'مجری': p.executor_name || '',
+        'پروژه': p.project_name || '',
+        'سریال مجوز': p.serial_number || '',
+        'وضعیت': p.status || '',
+        'توضیحات': p.description || '',
+        'ثبت‌کننده': p.recorded_by_name || '',
+        'تاریخ ثبت': formatDate(p.created_at),
+    })), {
+        title: 'خروجی پرداخت‌های تجاری',
+        textColumns: ['کد طرف حساب', 'سریال مجوز'],
+    });
+};
+
+const exportMachineryPayments = async () => {
+    const rows = await db('machinery_payments as p')
+        .leftJoin('machinery_contacts as c', 'p.machinery_contact_id', 'c.id')
+        .leftJoin('machines as m', 'c.machine_id', 'm.id')
+        .leftJoin('machinery_payment_categories as cat', 'p.category_id', 'cat.id')
+        .leftJoin('executors as e', 'p.executor_id', 'e.id')
+        .leftJoin('projects as pr', 'p.project_id', 'pr.id')
+        .leftJoin('payment_permission_serials as s', 'p.permission_serial_id', 's.id')
+        .leftJoin('users as u', 'p.recorded_by_user_id', 'u.id')
+        .select(
+            'p.amount',
+            'p.month',
+            'p.status',
+            'p.description',
+            'p.created_at',
+            'c.account_code',
+            'c.first_name',
+            'c.last_name',
+            'm.name as machine_name',
+            'cat.name as category_name',
+            'e.name as executor_name',
+            'pr.name as project_name',
+            's.serial_number',
+            'u.name as recorded_by_name',
+        )
+        .orderBy('p.id', 'desc');
+
+    return buildWorkbookBuffer('پرداخت ماشین', rows.map((p, index) => ({
+        'ردیف': index + 1,
+        'کد طرف حساب': p.account_code || '',
+        'ماشین': p.machine_name || '',
+        'نام مخاطب': `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+        'مبلغ': p.amount || 0,
+        'دسته‌بندی': p.category_name || '',
+        'ماه': p.month || '',
+        'مجری': p.executor_name || '',
+        'پروژه': p.project_name || '',
+        'سریال مجوز': p.serial_number || '',
+        'وضعیت': p.status || '',
+        'توضیحات': p.description || '',
+        'ثبت‌کننده': p.recorded_by_name || '',
+        'تاریخ ثبت': formatDate(p.created_at),
+    })), {
+        title: 'خروجی پرداخت ماشین‌آلات',
+        textColumns: ['کد طرف حساب', 'سریال مجوز'],
+    });
+};
+
+const exportSalaryPayments = async () => {
+    const rows = await db('salary_payments as p')
+        .leftJoin('personnel_contacts as c', 'p.personnel_contact_id', 'c.id')
+        .leftJoin('salary_payment_categories as cat', 'p.category_id', 'cat.id')
+        .leftJoin('executors as e', 'p.executor_id', 'e.id')
+        .leftJoin('projects as pr', 'p.project_id', 'pr.id')
+        .leftJoin('payment_permission_serials as s', 'p.permission_serial_id', 's.id')
+        .leftJoin('users as u', 'p.recorded_by_user_id', 'u.id')
+        .select(
+            'p.amount',
+            'p.month',
+            'p.status',
+            'p.description',
+            'p.created_at',
+            'c.personnel_code',
+            'c.first_name',
+            'c.last_name',
+            'cat.name as category_name',
+            'e.name as executor_name',
+            'pr.name as project_name',
+            's.serial_number',
+            'u.name as recorded_by_name',
+        )
+        .orderBy('p.id', 'desc');
+
+    return buildWorkbookBuffer('پرداخت حقوق', rows.map((p, index) => ({
+        'ردیف': index + 1,
+        'کد پرسنلی': p.personnel_code || '',
+        'نام': p.first_name || '',
+        'نام خانوادگی': p.last_name || '',
+        'مبلغ': p.amount || 0,
+        'دسته‌بندی': p.category_name || '',
+        'ماه': p.month || '',
+        'مجری': p.executor_name || '',
+        'پروژه': p.project_name || '',
+        'سریال مجوز': p.serial_number || '',
+        'وضعیت': p.status || '',
+        'توضیحات': p.description || '',
+        'ثبت‌کننده': p.recorded_by_name || '',
+        'تاریخ ثبت': formatDate(p.created_at),
+    })), {
+        title: 'خروجی پرداخت حقوق',
+        textColumns: ['کد پرسنلی', 'سریال مجوز'],
+    });
+};
+
 module.exports = {
     exportPaymentsList,
     exportByProject,
     exportByMonth,
     exportByExecutor,
     exportBySerial,
+    exportGeneralPayments,
+    exportCommercialPayments,
+    exportMachineryPayments,
+    exportSalaryPayments,
 };

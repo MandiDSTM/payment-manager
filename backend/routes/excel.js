@@ -27,6 +27,10 @@ const {
     exportByExecutor,
     exportBySerial,
     exportPersonnel,
+    exportGeneralPayments,
+    exportCommercialPayments,
+    exportMachineryPayments,
+    exportSalaryPayments,
     getLogs,
 } = require('../controllers/excelController');
 
@@ -51,6 +55,10 @@ router.post('/excel/preview/salary-payments', requireCommercialPaymentWrite, upl
 router.post('/excel/confirm/salary-payments', requireCommercialPaymentWrite, confirmSalaryPayments);
 
 router.get('/excel/export/payments', requireReadAccess, exportPayments);
+router.get('/excel/export/payments/general', requireReadAccess, exportGeneralPayments);
+router.get('/excel/export/payments/commercial', requireReadAccess, exportCommercialPayments);
+router.get('/excel/export/payments/machinery', requireReadAccess, exportMachineryPayments);
+router.get('/excel/export/payments/salary', requireReadAccess, exportSalaryPayments);
 router.get('/excel/export/by-project', requireReadAccess, exportByProject);
 router.get('/excel/export/by-month', requireReadAccess, exportByMonth);
 router.get('/excel/export/by-executor', requireReadAccess, exportByExecutor);

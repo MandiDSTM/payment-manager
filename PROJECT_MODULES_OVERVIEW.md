@@ -189,10 +189,15 @@
   - `POST /api/excel/preview/machinery-payments` + `POST /api/excel/confirm/machinery-payments`
   - `POST /api/excel/preview/salary-payments` + `POST /api/excel/confirm/salary-payments`
 - `GET /api/excel/export/payments` -> `excelController.exportPayments` (read)
+- `GET /api/excel/export/payments/general` -> `excelController.exportGeneralPayments` (read)
+- `GET /api/excel/export/payments/commercial` -> `excelController.exportCommercialPayments` (read)
+- `GET /api/excel/export/payments/machinery` -> `excelController.exportMachineryPayments` (read)
+- `GET /api/excel/export/payments/salary` -> `excelController.exportSalaryPayments` (read)
 - `GET /api/excel/export/by-project` -> `excelController.exportByProject` (read)
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth` (read)
 - `GET /api/excel/export/by-executor` -> `excelController.exportByExecutor` (read)
 - `GET /api/excel/export/by-serial` -> `excelController.exportBySerial` (read)
+- `GET /api/excel/export/personnel` -> `excelController.exportPersonnel` (read)
 
 #### 14) Lookups (مرجع‌ها برای فرم‌ها)
 در `backend/routes/lookups.js`:
@@ -358,7 +363,8 @@
   - `backend/services/machineryContactsExcelService.js`:
     - parse اکسل مخاطبین ماشین‌آلات برای import
   - `backend/services/excel/paymentExportService.js`:
-    - خروجی اکسل برای لیست پرداخت‌ها و گزارش‌های grouped
+    - خروجی ترکیبی همه پرداخت‌ها و گزارش‌های grouped
+    - خروجی جداگانه عمومی / تجاری / ماشین‌آلات / حقوق
 
 #### Utils
 - `backend/utils/validateSheba.js`
@@ -426,6 +432,9 @@
 - همان جریان پرسنل برای پرداخت‌های عمومی/تجاری/ماشین‌آلات/حقوق
 - `kind`: `general` | `commercial` | `machinery` | `salary`
 
+#### `frontend/src/components/PaymentExcelExport.jsx`
+- دکمه خروجی اکسل سرور برای هر نوع پرداخت (`GET /excel/export/payments/{general|commercial|machinery|salary}`)
+
 #### `frontend/src/components/PaymentTable.jsx`
 - جدول رکوردهای `payments` (legacy عمومی)
 - قابلیت‌ها:
@@ -456,8 +465,8 @@
   - PATCH -> `/payments/:id/update-field`
 - عملیات گروهی:
   - `POST /payments/bulk-status` برای وضعیت `'تکمیل شده'` (admin)
-- خروجی اکسل (client-side):
-  - از `utils/excelExport.js` استفاده می‌کند.
+- خروجی اکسل:
+  - `GET /excel/export/payments/general` (همه رکوردها)
 - ورود اکسل با پیش‌نمایش و انتخاب ردیف:
   - `POST /excel/preview/payments` سپس `POST /excel/confirm/payments`
 - پاکسازی کامل:
@@ -505,6 +514,8 @@
   - POST `/commercial-payments/:id/receipt`
 - ورود اکسل با پیش‌نمایش:
   - POST `/excel/preview/commercial-payments` سپس POST `/excel/confirm/commercial-payments`
+- خروجی اکسل:
+  - GET `/excel/export/payments/commercial`
 
 #### `frontend/src/pages/MachineryPaymentsPage.jsx`
 - مشابه تجاری، ولی endpoint های مخصوص ماشین‌آلات:
@@ -513,6 +524,7 @@
   - POST/PUT/DELETE روی `/machinery-payments/:id`
   - آپلود رسید: `/machinery-payments/:id/receipt`
   - ورود اکسل: `/excel/preview/machinery-payments` + `/excel/confirm/machinery-payments`
+  - خروجی اکسل: `/excel/export/payments/machinery`
 
 #### `frontend/src/pages/SalaryPaymentsPage.jsx`
 - مشابه، ولی endpoint های حقوق:
@@ -521,6 +533,7 @@
   - POST/PUT/DELETE روی `/salary-payments/:id`
   - آپلود رسید: `/salary-payments/:id/receipt`
   - ورود اکسل: فایل فقط کد پرسنلی و مبلغ لازم دارد؛ بقیه فیلدها مرحله‌به‌مرحله پرسیده و روی کل فایل اعمال می‌شود (`/excel/preview/salary-payments` + `/excel/confirm/salary-payments`)
+  - خروجی اکسل: `/excel/export/payments/salary`
 
 #### `frontend/src/pages/PersonnelContactsPage.jsx`
 - CRUD پرسنل:
@@ -554,6 +567,10 @@
     - `/excel/import/machinery-contacts`
   - خروجی‌ها (read):
     - `/excel/export/personnel`
+    - `/excel/export/payments/general`
+    - `/excel/export/payments/commercial`
+    - `/excel/export/payments/machinery`
+    - `/excel/export/payments/salary`
     - `/excel/export/payments`
     - `/excel/export/by-project`
     - `/excel/export/by-month`

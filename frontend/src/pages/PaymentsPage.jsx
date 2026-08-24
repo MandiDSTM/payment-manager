@@ -3,7 +3,7 @@ import api, { canCreatePayment, isAdmin } from '../api';
 import SmartForm from '../components/SmartForm';
 import PaymentTable from '../components/PaymentTable';
 import PaymentExcelImport from '../components/PaymentExcelImport';
-import { downloadFormattedExcel, formatExportDate } from '../utils/excelExport';
+import PaymentExcelExport from '../components/PaymentExcelExport';
 import { Button, Card, PageHeader, SearchInput } from '../components/ui';
 
 function PaymentsPage() {
@@ -72,28 +72,6 @@ function PaymentsPage() {
     }
   };
 
-  const exportToExcel = () => {
-    if (filteredData.length === 0) {
-      alert('دیتایی برای خروجی گرفتن وجود ندارد.');
-      return;
-    }
-    const excelData = filteredData.map((item) => ({
-      'کد پرسنلی': item.personnel_code,
-      نام: item.first_name,
-      'نام خانوادگی': item.last_name,
-      تاریخ: item.date_shamsi,
-      'مبلغ (ریال)': item.amount,
-      سریال: item.serial,
-      'شماره شبا': item.sheba,
-      بابت: item.subject,
-      وضعیت: item.status,
-    }));
-    const exportStamp = formatExportDate().replace(/[/:]/g, '-').replace(/\s+/g, '_');
-    downloadFormattedExcel('پرداخت‌ها', excelData, `Report_${exportStamp}.xlsx`, {
-      title: 'گزارش پرداخت‌های عمومی',
-    });
-  };
-
   const saveManualRecord = async (data) => {
     try {
       const response = await api.post('/payments', data);
@@ -122,7 +100,10 @@ function PaymentsPage() {
                 {isLocked ? 'قفل است' : 'ویرایش آزاد'}
               </Button>
             )}
-            <Button variant="secondary" onClick={exportToExcel}>خروجی اکسل</Button>
+            <PaymentExcelExport
+              endpoint="/excel/export/payments/general"
+              filenamePrefix="payments-general"
+            />
             {canCreatePayment() && (
               <PaymentExcelImport kind="general" variant="toolbar" onDone={fetchData} />
             )}

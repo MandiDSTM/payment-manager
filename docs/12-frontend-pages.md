@@ -26,6 +26,8 @@
   - `POST /api/excel/confirm/payments` برای ثبت ردیف‌های انتخاب‌شده
   - قالب: `GET /api/excel/template/payments`
   - مسیر قدیمی `POST /api/upload-excel` هنوز برای سازگاری وجود دارد
+- خروجی اکسل (همه رکوردها):
+  - `GET /api/excel/export/payments/general`
 
 ---
 
@@ -83,6 +85,8 @@ Lookups:
   - `POST /api/excel/preview/commercial-payments`
   - `POST /api/excel/confirm/commercial-payments`
   - قالب: `GET /api/excel/template/commercial-payments`
+- خروجی اکسل (همه رکوردها، برای همه نقش‌های خواننده):
+  - `GET /api/excel/export/payments/commercial`
 
 ---
 
@@ -107,6 +111,8 @@ Lookups:
   - `POST /api/excel/preview/machinery-payments`
   - `POST /api/excel/confirm/machinery-payments`
   - قالب: `GET /api/excel/template/machinery-payments`
+- خروجی اکسل (همه رکوردها، برای همه نقش‌های خواننده):
+  - `GET /api/excel/export/payments/machinery`
 
 ---
 
@@ -130,6 +136,8 @@ Lookups:
   - اگر دسته/ماه/مجری/پروژه/سریال خالی باشد: ویزارد مرحله‌به‌مرحله (`SalaryImportDefaultsWizard`) مقدار را می‌گیرد و روی همه ردیف‌ها اعمال می‌کند
   - سپس پیش‌نمایش + انتخاب ردیف: `POST /api/excel/preview/salary-payments` و `POST /api/excel/confirm/salary-payments`
   - قالب: `GET /api/excel/template/salary-payments`
+- خروجی اکسل (همه رکوردها، برای همه نقش‌های خواننده):
+  - `GET /api/excel/export/payments/salary`
 
 ---
 
@@ -180,6 +188,10 @@ Download templates:
 
 Export (read):
 - `GET /api/excel/export/personnel`
+- `GET /api/excel/export/payments/general`
+- `GET /api/excel/export/payments/commercial`
+- `GET /api/excel/export/payments/machinery`
+- `GET /api/excel/export/payments/salary`
 - `GET /api/excel/export/payments`
 - `GET /api/excel/export/by-project`
 - `GET /api/excel/export/by-month`

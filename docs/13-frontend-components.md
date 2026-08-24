@@ -47,6 +47,12 @@
 - دانلود قالب، آپلود، مودال پیش‌نمایش با چک‌باکس، ثبت انتخاب‌شده‌ها
 - برای حقوق: اگر فیلدهای مشترک خالی باشد، قبل از پیش‌نمایش ویزارد مرحله‌ای باز می‌شود
 
+### `PaymentExcelExport`
+`frontend/src/components/PaymentExcelExport.jsx`
+- دکمه خروجی اکسل برای هر نوع پرداخت
+- `GET` با `responseType: blob` و دانلود فایل
+- روی صفحات عمومی / تجاری / ماشین‌آلات / حقوق و صفحه Excel استفاده می‌شود
+
 ### `SalaryImportDefaultsWizard`
 `frontend/src/components/SalaryImportDefaultsWizard.jsx`
 - پرسش مرحله‌ای دسته‌بندی، ماه، مجری، پروژه و سریال مجوز
@@ -79,7 +85,6 @@
 `frontend/src/utils/excelExport.js`
 - ساخت workbook برای exportهای client-side
 - استفاده‌شده در:
-  - `PaymentsPage` (خروجی اکسل)
   - `PermissionSerialsPage` (خروجی اکسل مجوزها)
 
 `frontend/src/utils/format.js`

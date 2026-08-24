@@ -4,6 +4,7 @@ import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
 import PaymentExcelImport from '../components/PaymentExcelImport';
+import PaymentExcelExport from '../components/PaymentExcelExport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount } from '../utils/format';
 
@@ -196,16 +197,24 @@ function SalaryPaymentsPage() {
       <PageHeader
         title="پرداخت حقوق"
         description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
-        actions={canEditCommercialPayment() && (
+        actions={(
           <div className="flex flex-wrap gap-2 items-center">
-            <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
-              ثبت پرداخت
-            </Button>
-            <PaymentExcelImport
-              kind="salary"
-              variant="toolbar"
-              onDone={() => { fetchPayments(); fetchLookups(); }}
+            <PaymentExcelExport
+              endpoint="/excel/export/payments/salary"
+              filenamePrefix="payments-salary"
             />
+            {canEditCommercialPayment() && (
+              <>
+                <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
+                  ثبت پرداخت
+                </Button>
+                <PaymentExcelImport
+                  kind="salary"
+                  variant="toolbar"
+                  onDone={() => { fetchPayments(); fetchLookups(); }}
+                />
+              </>
+            )}
           </div>
         )}
       >

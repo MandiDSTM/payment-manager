@@ -394,6 +394,42 @@ const exportPersonnel = async (_req, res) => {
     }
 };
 
+const exportGeneralPayments = async (_req, res) => {
+    try {
+        const buffer = await paymentExport.exportGeneralPayments();
+        sendExcelBuffer(res, buffer, `payments-general-${Date.now()}.xlsx`);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const exportCommercialPayments = async (_req, res) => {
+    try {
+        const buffer = await paymentExport.exportCommercialPayments();
+        sendExcelBuffer(res, buffer, `payments-commercial-${Date.now()}.xlsx`);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const exportMachineryPayments = async (_req, res) => {
+    try {
+        const buffer = await paymentExport.exportMachineryPayments();
+        sendExcelBuffer(res, buffer, `payments-machinery-${Date.now()}.xlsx`);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const exportSalaryPayments = async (_req, res) => {
+    try {
+        const buffer = await paymentExport.exportSalaryPayments();
+        sendExcelBuffer(res, buffer, `payments-salary-${Date.now()}.xlsx`);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 const getLogs = async (_req, res) => {
     try {
         const logs = await getRecentLogs();
@@ -424,5 +460,9 @@ module.exports = {
     exportByExecutor,
     exportBySerial,
     exportPersonnel,
+    exportGeneralPayments,
+    exportCommercialPayments,
+    exportMachineryPayments,
+    exportSalaryPayments,
     getLogs,
 };

@@ -4,6 +4,7 @@ import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
 import PaymentExcelImport from '../components/PaymentExcelImport';
+import PaymentExcelExport from '../components/PaymentExcelExport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount, statusBadgeClass } from '../utils/format';
 
@@ -229,14 +230,22 @@ function CommercialPaymentsPage() {
       <PageHeader
         title="پرداخت‌های تجاری"
         description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
-        actions={canEditCommercialPayment() && (
+        actions={(
           <div className="flex flex-wrap gap-2 items-center">
-            <Button onClick={openCreate}>ثبت پرداخت جدید</Button>
-            <PaymentExcelImport
-              kind="commercial"
-              variant="toolbar"
-              onDone={() => { fetchPayments(); fetchLookups(); }}
+            <PaymentExcelExport
+              endpoint="/excel/export/payments/commercial"
+              filenamePrefix="payments-commercial"
             />
+            {canEditCommercialPayment() && (
+              <>
+                <Button onClick={openCreate}>ثبت پرداخت جدید</Button>
+                <PaymentExcelImport
+                  kind="commercial"
+                  variant="toolbar"
+                  onDone={() => { fetchPayments(); fetchLookups(); }}
+                />
+              </>
+            )}
           </div>
         )}
       >

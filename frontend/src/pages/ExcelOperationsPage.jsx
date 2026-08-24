@@ -154,7 +154,11 @@ function ExcelOperationsPage() {
         <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>خروجی گزارش‌ها</h3>
         <Card className="p-5 flex flex-wrap gap-3">
           <ExportButton label="خروجی پرسنل" endpoint="/excel/export/personnel" />
-          <ExportButton label="لیست پرداخت‌ها" endpoint="/excel/export/payments" />
+          <ExportButton label="پرداخت‌های عمومی" endpoint="/excel/export/payments/general" />
+          <ExportButton label="پرداخت‌های تجاری" endpoint="/excel/export/payments/commercial" />
+          <ExportButton label="پرداخت ماشین‌آلات" endpoint="/excel/export/payments/machinery" />
+          <ExportButton label="پرداخت حقوق" endpoint="/excel/export/payments/salary" />
+          <ExportButton label="لیست همه پرداخت‌ها" endpoint="/excel/export/payments" />
           <ExportButton label="گزارش بر اساس پروژه" endpoint="/excel/export/by-project" />
           <ExportButton label="گزارش بر اساس ماه" endpoint="/excel/export/by-month" />
           <ExportButton label="گزارش بر اساس مجری" endpoint="/excel/export/by-executor" />

@@ -64,7 +64,8 @@
   - import مخاطبین ماشین‌آلات (resolve کردن `machine_id` از روی `machine name`)
 - `backend/services/excel/paymentExportService.js`
   - ساخت workbook:
-    - `exportPaymentsList`
+    - `exportPaymentsList` (ترکیبی همه انواع)
+    - `exportGeneralPayments` / `exportCommercialPayments` / `exportMachineryPayments` / `exportSalaryPayments`
     - `exportByProject`
     - `exportByMonth`
     - `exportByExecutor`
