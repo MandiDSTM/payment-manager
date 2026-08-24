@@ -3,6 +3,7 @@ import api, { isAdmin, canEditCommercialPayment, isSelectablePermit } from '../a
 import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
+import PaymentExcelImport from '../components/PaymentExcelImport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount } from '../utils/format';
 
@@ -194,11 +195,18 @@ function SalaryPaymentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="پرداخت حقوق"
-        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K"
+        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
         actions={canEditCommercialPayment() && (
-          <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
-            ثبت پرداخت
-          </Button>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
+              ثبت پرداخت
+            </Button>
+            <PaymentExcelImport
+              kind="salary"
+              variant="toolbar"
+              onDone={() => { fetchPayments(); fetchLookups(); }}
+            />
+          </div>
         )}
       >
         <StatusTabs tabs={STATUS_TABS} value={activeStatus} onChange={setActiveStatus} />
@@ -209,6 +217,11 @@ function SalaryPaymentsPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="جستجو..."
         />
+        {canEditCommercialPayment() && (
+          <p className="text-xs ui-muted mt-2">
+            ستون‌های اجباری اکسل: کد پرسنلی و مبلغ. دسته‌بندی، ماه، مجری، پروژه و سریال بعد از آپلود پرسیده می‌شود.
+          </p>
+        )}
       </PageHeader>
 
       {showForm && (

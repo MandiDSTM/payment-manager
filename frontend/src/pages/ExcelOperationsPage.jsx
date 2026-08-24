@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import api, { isAdmin } from '../api';
+import api, { isAdmin, canCreatePayment } from '../api';
 import { Alert, Button, Card, DataTable, PageHeader } from '../components/ui';
 import PersonnelExcelImport from '../components/PersonnelExcelImport';
+import PaymentExcelImport from '../components/PaymentExcelImport';
 
 const downloadBlob = (data, filename) => {
   const url = window.URL.createObjectURL(new Blob([data]));
@@ -120,12 +121,25 @@ function ExcelOperationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="ورود و خروج Excel"
-        description="اعتبارسنجی ستون‌ها، شبا، کد پرسنلی و کد ملی هنگام ورود انجام می‌شود."
+        description="ورود پرداخت‌ها و پرسنل با پیش‌نمایش، انتخاب ردیف و اعتبارسنجی ستون‌ها انجام می‌شود."
       />
+
+      {canCreatePayment() && (
+        <section className="space-y-4">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>ورود پرداخت‌ها</h3>
+          <p className="text-sm ui-muted">پس از آپلود، پیش‌نمایش باز می‌شود و می‌توانید ردیف‌ها را انتخاب کنید.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <PaymentExcelImport kind="general" onDone={fetchLogs} />
+            <PaymentExcelImport kind="commercial" onDone={fetchLogs} />
+            <PaymentExcelImport kind="machinery" onDone={fetchLogs} />
+            <PaymentExcelImport kind="salary" onDone={fetchLogs} />
+          </div>
+        </section>
+      )}
 
       {isAdmin() && (
         <section className="space-y-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>ورود داده‌ها</h3>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>ورود مخاطبین</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <PersonnelExcelImport onDone={fetchLogs} />
             <ImportCard title="ویرایش گروهی پرسنل" endpoint="/excel/import/personnel-bulk-update"

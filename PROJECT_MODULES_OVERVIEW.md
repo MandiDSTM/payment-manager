@@ -178,9 +178,16 @@
 در `backend/routes/excel.js`:
 - `GET /api/excel/logs` -> `excelController.getLogs` (read)
 - `GET /api/excel/template/:type` -> `excelController.downloadTemplate` (read)
+  - `personnel`, `payments`, `commercial-payments`, `machinery-payments`, `salary-payments`, `machinery-contacts`
+- `POST /api/excel/preview/personnel` + `POST /api/excel/confirm/personnel` (admin)
 - `POST /api/excel/import/personnel` -> `excelController.importPersonnel` (admin)
 - `POST /api/excel/import/personnel-bulk-update` -> `excelController.importPersonnelBulkUpdate` (admin)
 - `POST /api/excel/import/machinery-contacts` -> `excelController.importMachineryContacts` (admin)
+- پیش‌نمایش/ثبت پرداخت‌ها (admin/accountant):
+  - `POST /api/excel/preview/payments` + `POST /api/excel/confirm/payments`
+  - `POST /api/excel/preview/commercial-payments` + `POST /api/excel/confirm/commercial-payments`
+  - `POST /api/excel/preview/machinery-payments` + `POST /api/excel/confirm/machinery-payments`
+  - `POST /api/excel/preview/salary-payments` + `POST /api/excel/confirm/salary-payments`
 - `GET /api/excel/export/payments` -> `excelController.exportPayments` (read)
 - `GET /api/excel/export/by-project` -> `excelController.exportByProject` (read)
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth` (read)
@@ -289,6 +296,7 @@
 
 #### `backend/controllers/excelController.js`
 - قالب‌ها و import/export اکسل
+- پیش‌نمایش + تأیید انتخاب‌شده‌ها برای پرسنل و هر چهار نوع پرداخت
 - ثبت لاگ‌ها در `excel_logs` با کمک `utils/excelLog.js`
 - پاکسازی فایل آپلود شده با `fs.unlink`
 
@@ -337,9 +345,16 @@
 
 - سرویس‌های اکسل:
   - `backend/services/excelService.js`:
-    - parse اکسل برای `payments` عمومی/legacy
+    - parse اکسل برای `payments` عمومی/legacy (مسیر قدیمی `/upload-excel`)
   - `backend/services/excel/personnelExcelService.js`:
-    - parse اکسل پرسنل برای import صفحه Excel
+    - parsePreview + confirmImport برای پرسنل
+  - `backend/services/excel/generalPaymentsExcelService.js`:
+    - parsePreview + confirmImport برای پرداخت‌های عمومی
+  - `backend/services/excel/typedPaymentsExcelService.js`:
+    - parsePreview + confirmImport برای تجاری / ماشین‌آلات / حقوق
+    - resolve مرجع‌ها از متن ستون و مصرف سریال در تراکنش
+  - `backend/services/excel/excelImportUtils.js`:
+    - نرمال‌سازی مبلغ و lookup مشترک
   - `backend/services/machineryContactsExcelService.js`:
     - parse اکسل مخاطبین ماشین‌آلات برای import
   - `backend/services/excel/paymentExportService.js`:
@@ -404,6 +419,13 @@
 - فیلدها: `personnel_code`, `first_name`, `last_name`, `date_shamsi`, `amount`, `serial`, `sheba`, `subject`, `description`
 - با Enter/Keyboard Nav به فیلدهای بعدی می‌رود و در آخر submit می‌کند.
 
+#### `frontend/src/components/PersonnelExcelImport.jsx`
+- ورود گروهی پرسنل با پیش‌نمایش، انتخاب ردیف و تأیید
+
+#### `frontend/src/components/PaymentExcelImport.jsx`
+- همان جریان پرسنل برای پرداخت‌های عمومی/تجاری/ماشین‌آلات/حقوق
+- `kind`: `general` | `commercial` | `machinery` | `salary`
+
 #### `frontend/src/components/PaymentTable.jsx`
 - جدول رکوردهای `payments` (legacy عمومی)
 - قابلیت‌ها:
@@ -436,8 +458,8 @@
   - `POST /payments/bulk-status` برای وضعیت `'تکمیل شده'` (admin)
 - خروجی اکسل (client-side):
   - از `utils/excelExport.js` استفاده می‌کند.
-- آپلود اکسل:
-  - `POST /upload-excel` با multipart/form-data
+- ورود اکسل با پیش‌نمایش و انتخاب ردیف:
+  - `POST /excel/preview/payments` سپس `POST /excel/confirm/payments`
 - پاکسازی کامل:
   - `DELETE /clear-all-data`
 
@@ -481,6 +503,8 @@
   - DELETE `/commercial-payments/:id` (admin و وقتی اجازه حذف داشته باشد)
 - آپلود فیش:
   - POST `/commercial-payments/:id/receipt`
+- ورود اکسل با پیش‌نمایش:
+  - POST `/excel/preview/commercial-payments` سپس POST `/excel/confirm/commercial-payments`
 
 #### `frontend/src/pages/MachineryPaymentsPage.jsx`
 - مشابه تجاری، ولی endpoint های مخصوص ماشین‌آلات:
@@ -488,6 +512,7 @@
   - lookups: `/machinery-contacts`, `/machinery-payment-categories`, `/persian-months`, `/executors`, `/projects`, `/permission-serials`
   - POST/PUT/DELETE روی `/machinery-payments/:id`
   - آپلود رسید: `/machinery-payments/:id/receipt`
+  - ورود اکسل: `/excel/preview/machinery-payments` + `/excel/confirm/machinery-payments`
 
 #### `frontend/src/pages/SalaryPaymentsPage.jsx`
 - مشابه، ولی endpoint های حقوق:
@@ -495,6 +520,7 @@
   - lookups: `/personnel-contacts`, `/salary-payment-categories`, `/persian-months`, `/executors`, `/projects`, `/permission-serials`
   - POST/PUT/DELETE روی `/salary-payments/:id`
   - آپلود رسید: `/salary-payments/:id/receipt`
+  - ورود اکسل: فایل فقط کد پرسنلی و مبلغ لازم دارد؛ بقیه فیلدها مرحله‌به‌مرحله پرسیده و روی کل فایل اعمال می‌شود (`/excel/preview/salary-payments` + `/excel/confirm/salary-payments`)
 
 #### `frontend/src/pages/PersonnelContactsPage.jsx`
 - CRUD پرسنل:
@@ -517,11 +543,17 @@
 
 #### `frontend/src/pages/ExcelOperationsPage.jsx`
 - import/export اکسل «پیشرفته» با endpoint های بک‌اند + دانلود قالب:
-  - آپلود‌ها (admin فقط):
-    - `/excel/import/personnel`
+  - ورود پرداخت‌ها (admin/accountant) با پیش‌نمایش و انتخاب:
+    - `/excel/preview/payments` + `/excel/confirm/payments`
+    - `/excel/preview/commercial-payments` + `/excel/confirm/commercial-payments`
+    - `/excel/preview/machinery-payments` + `/excel/confirm/machinery-payments`
+    - `/excel/preview/salary-payments` + `/excel/confirm/salary-payments`
+  - آپلود‌های مخاطبین (admin فقط):
+    - `/excel/preview/personnel` + `/excel/confirm/personnel`
     - `/excel/import/personnel-bulk-update`
     - `/excel/import/machinery-contacts`
   - خروجی‌ها (read):
+    - `/excel/export/personnel`
     - `/excel/export/payments`
     - `/excel/export/by-project`
     - `/excel/export/by-month`
@@ -564,8 +596,9 @@
    - serial مصرف‌شده release و payment حذف می‌شود (با محدودیت‌های مربوط به status یا سند حسابداری برای برخی انواع پرداخت).
 
 ### 3.2) مسیرهای Excel
-- import ها:
-  - `excelController` -> سرویس‌های parse در `backend/services/excel/*` -> insert در جدول مربوطه
+- import با پیش‌نمایش:
+  - آپلود فایل -> `preview*` (بدون insert) -> مودال انتخاب در فرانت -> `confirm*` -> insert
+  - پرداخت‌های تجاری/ماشین‌آلات/حقوق هنگام confirm سریال مجوز را در تراکنش مصرف می‌کنند
   - خطاها در `excel_logs` ثبت می‌شود.
 - export ها:
   - `excelController` -> `services/excel/paymentExportService.js` -> ساخت workbook با `utils/excelHelpers.js` -> ارسال فایل.

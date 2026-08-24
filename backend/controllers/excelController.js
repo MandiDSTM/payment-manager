@@ -5,6 +5,8 @@ const { sendExcelBuffer } = require('../utils/excelHelpers');
 const personnelExcel = require('../services/excel/personnelExcelService');
 const { parseExcelFile: parseMachineryExcel } = require('../services/machineryContactsExcelService');
 const paymentExport = require('../services/excel/paymentExportService');
+const generalPaymentsExcel = require('../services/excel/generalPaymentsExcelService');
+const typedPaymentsExcel = require('../services/excel/typedPaymentsExcelService');
 const { buildWorkbookBuffer } = require('../utils/excelHelpers');
 const { resolveRecordedByUserId } = require('../services/commercialPaymentService');
 
@@ -186,6 +188,110 @@ const importMachineryContacts = async (req, res) => {
     }
 };
 
+const makePreviewHandler = (service) => async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'فایلی انتخاب نشده است' });
+
+        const { rows, warnings, missingColumns, sharedFieldsNeeded } = await service.parsePreview(req.file.path);
+        res.json({
+            message: `${rows.length} ردیف خوانده شد`,
+            fileName: req.file.originalname,
+            warnings: warnings || [],
+            missingColumns: missingColumns || [],
+            sharedFieldsNeeded: sharedFieldsNeeded || [],
+            rows,
+        });
+    } catch (error) {
+        const err = handleImportError(error);
+        res.status(err.status).json({ message: err.message });
+    } finally {
+        if (req.file?.path) fs.unlink(req.file.path, () => {});
+    }
+};
+
+const makeConfirmHandler = (service, { operationType, successLabel }) => async (req, res) => {
+    try {
+        const records = req.body?.records;
+        if (!Array.isArray(records) || records.length === 0) {
+            return res.status(400).json({ message: 'هیچ ردیفی برای ثبت انتخاب نشده است' });
+        }
+
+        const result = await service.confirmImport(records, {
+            onlyFullyValid: Boolean(req.body?.onlyFullyValid),
+            userId: resolveRecordedByUserId(req),
+        });
+        if (result.aborted) {
+            return res.status(409).json({
+                message: 'ثبت انجام نشد؛ خطاهای انتخاب‌شده را برطرف کنید',
+                imported: 0,
+                failed: result.errors.length,
+                errors: result.errors,
+                aborted: true,
+            });
+        }
+
+        const log = await logExcelEvent({
+            operationType,
+            fileName: req.body?.fileName || null,
+            userId: resolveRecordedByUserId(req),
+            imported: result.inserted,
+            failed: 0,
+            errors: [],
+        });
+
+        res.json({
+            message: `${result.inserted} ${successLabel} با موفقیت ثبت شد`,
+            imported: result.inserted,
+            failed: 0,
+            errors: [],
+            aborted: false,
+            log,
+        });
+    } catch (error) {
+        if (error.message === 'NO_RECORDS_SELECTED') {
+            return res.status(400).json({ message: 'هیچ ردیفی برای ثبت انتخاب نشده است' });
+        }
+        if (error.message === 'NO_FULLY_VALID_RECORDS') {
+            return res.status(400).json({ message: 'هیچ ردیف کاملاً معتبری برای ثبت وجود ندارد' });
+        }
+        if (error.message === 'SERIAL_NOT_AVAILABLE') {
+            return res.status(409).json({
+                message: 'ثبت انجام نشد؛ سریال مجوز قابل مصرف نیست',
+                imported: 0,
+                failed: 1,
+                errors: [{ row: null, message: 'سریال مجوز قبلاً مصرف شده است' }],
+                aborted: true,
+            });
+        }
+        if (error.message === 'SERIAL_NOT_FOUND') {
+            return res.status(404).json({ message: 'سریال مجوز پرداخت یافت نشد' });
+        }
+        const err = handleImportError(error);
+        res.status(err.status).json({ message: err.message });
+    }
+};
+
+const previewPayments = makePreviewHandler(generalPaymentsExcel);
+const confirmPayments = makeConfirmHandler(generalPaymentsExcel, {
+    operationType: 'import_payments',
+    successLabel: 'پرداخت عمومی',
+});
+const previewCommercialPayments = makePreviewHandler(typedPaymentsExcel.commercial);
+const confirmCommercialPayments = makeConfirmHandler(typedPaymentsExcel.commercial, {
+    operationType: 'import_commercial_payments',
+    successLabel: 'پرداخت تجاری',
+});
+const previewMachineryPayments = makePreviewHandler(typedPaymentsExcel.machinery);
+const confirmMachineryPayments = makeConfirmHandler(typedPaymentsExcel.machinery, {
+    operationType: 'import_machinery_payments',
+    successLabel: 'پرداخت ماشین‌آلات',
+});
+const previewSalaryPayments = makePreviewHandler(typedPaymentsExcel.salary);
+const confirmSalaryPayments = makeConfirmHandler(typedPaymentsExcel.salary, {
+    operationType: 'import_salary_payments',
+    successLabel: 'پرداخت حقوق',
+});
+
 const downloadTemplate = async (req, res) => {
     try {
         const { type } = req.params;
@@ -194,6 +300,18 @@ const downloadTemplate = async (req, res) => {
         switch (type) {
             case 'personnel':
                 buffer = personnelExcel.getTemplateBuffer();
+                break;
+            case 'payments':
+                buffer = generalPaymentsExcel.getTemplateBuffer();
+                break;
+            case 'commercial-payments':
+                buffer = typedPaymentsExcel.commercial.getTemplateBuffer();
+                break;
+            case 'machinery-payments':
+                buffer = typedPaymentsExcel.machinery.getTemplateBuffer();
+                break;
+            case 'salary-payments':
+                buffer = typedPaymentsExcel.salary.getTemplateBuffer();
                 break;
             case 'machinery-contacts':
                 buffer = buildWorkbookBuffer('مخاطبین ماشین', [{
@@ -291,6 +409,14 @@ module.exports = {
     confirmPersonnel,
     importPersonnelBulkUpdate,
     importMachineryContacts,
+    previewPayments,
+    confirmPayments,
+    previewCommercialPayments,
+    confirmCommercialPayments,
+    previewMachineryPayments,
+    confirmMachineryPayments,
+    previewSalaryPayments,
+    confirmSalaryPayments,
     downloadTemplate,
     exportPayments,
     exportByProject,

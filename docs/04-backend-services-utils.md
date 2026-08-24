@@ -45,11 +45,21 @@
 
 ### Services مربوط به Excel
 - `backend/services/excelService.js`
-  - parse اکسل برای `payments` عمومی/legacy (تشخیص ستون‌ها و ساخت رکورد)
+  - parse اکسل برای `payments` عمومی/legacy (تشخیص ستون‌ها و ساخت رکورد) — مسیر قدیمی `/upload-excel`
 - `backend/services/excel/personnelExcelService.js`
   - پشتیبانی از فایل‌های HR با هدر دو ردیفه و ستون‌های «نام و نام خانوادگی پرسنل»، «کد ملی»، «کد پرسنلی»
   - `parsePreview` + `confirmImport` (مودال انتخاب قبل از ثبت)
   - یکتایی `personnel_code` و `national_id` (داخل فایل و دیتابیس)
+- `backend/services/excel/generalPaymentsExcelService.js`
+  - ورود پرداخت‌های عمومی با `parsePreview` + `confirmImport`
+  - هشدار شبا نامعتبر؛ مبلغ و تاریخ اجباری
+- `backend/services/excel/typedPaymentsExcelService.js`
+  - ورود تجاری / ماشین‌آلات / حقوق با همان جریان پیش‌نمایش
+  - resolve مخاطب (کد طرف حساب / کد پرسنلی)، دسته‌بندی، مجری، پروژه، سریال مجوز
+  - مصرف سریال در تراکنش هنگام confirm
+  - برای حقوق: ستون‌های اجباری فایل فقط `کد پرسنلی` و `مبلغ` هستند؛ بقیه فیلدها به‌صورت `sharedFieldsNeeded` برمی‌گردند تا فرانت مرحله‌به‌مرحله بپرسد و روی کل فایل اعمال کند
+- `backend/services/excel/excelImportUtils.js`
+  - نرمال‌سازی مبلغ (ارقام فارسی)، ایندکس lookup و تشخیص ردیف تکراری
 - `backend/services/machineryContactsExcelService.js`
   - import مخاطبین ماشین‌آلات (resolve کردن `machine_id` از روی `machine name`)
 - `backend/services/excel/paymentExportService.js`

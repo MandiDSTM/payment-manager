@@ -22,7 +22,10 @@
 - پاکسازی (admin):
   - `DELETE /api/clear-all-data`
 - آپلود اکسل (اگر مجاز باشد):
-  - `POST /api/upload-excel` (multipart/form-data)
+  - `POST /api/excel/preview/payments` (multipart/form-data) سپس مودال انتخاب
+  - `POST /api/excel/confirm/payments` برای ثبت ردیف‌های انتخاب‌شده
+  - قالب: `GET /api/excel/template/payments`
+  - مسیر قدیمی `POST /api/upload-excel` هنوز برای سازگاری وجود دارد
 
 ---
 
@@ -76,6 +79,10 @@ Lookups:
   - `DELETE /api/commercial-payments/:id`
 - آپلود فیش:
   - `POST /api/commercial-payments/:id/receipt`
+- ورود اکسل (admin/accountant):
+  - `POST /api/excel/preview/commercial-payments`
+  - `POST /api/excel/confirm/commercial-payments`
+  - قالب: `GET /api/excel/template/commercial-payments`
 
 ---
 
@@ -96,6 +103,10 @@ Lookups:
   - `DELETE /api/machinery-payments/:id`
 - آپلود فیش:
   - `POST /api/machinery-payments/:id/receipt`
+- ورود اکسل (admin/accountant):
+  - `POST /api/excel/preview/machinery-payments`
+  - `POST /api/excel/confirm/machinery-payments`
+  - قالب: `GET /api/excel/template/machinery-payments`
 
 ---
 
@@ -114,6 +125,11 @@ Lookups:
   - `POST /api/salary-payments`
   - `PUT /api/salary-payments/:id`
   - `DELETE /api/salary-payments/:id`
+- ورود اکسل (admin/accountant):
+  - فایل حداقل باید `کد پرسنلی` و `مبلغ` داشته باشد
+  - اگر دسته/ماه/مجری/پروژه/سریال خالی باشد: ویزارد مرحله‌به‌مرحله (`SalaryImportDefaultsWizard`) مقدار را می‌گیرد و روی همه ردیف‌ها اعمال می‌کند
+  - سپس پیش‌نمایش + انتخاب ردیف: `POST /api/excel/preview/salary-payments` و `POST /api/excel/confirm/salary-payments`
+  - قالب: `GET /api/excel/template/salary-payments`
 
 ---
 
@@ -144,6 +160,11 @@ Lookups:
 ---
 
 ## `ExcelOperationsPage`
+ورود پرداخت‌ها (admin/accountant) با همان جریان پرسنل:
+- آپلود → `POST /api/excel/preview/{payments|commercial-payments|machinery-payments|salary-payments}`
+- مودال انتخاب با چک‌باکس → `POST /api/excel/confirm/...`
+- در خطای سریال تکراری/غیرقابل‌مصرف یا مرجع نامعتبر، مودال باز می‌ماند و ردیف خطا هایلایت می‌شود
+
 Import پرسنل (admin):
 - آپلود → `POST /api/excel/preview/personnel`
 - مودال انتخاب با چک‌باکس → `POST /api/excel/confirm/personnel`
@@ -155,6 +176,7 @@ Import پرسنل (admin):
 
 Download templates:
 - `GET /api/excel/template/:type`
+  - `personnel`, `payments`, `commercial-payments`, `machinery-payments`, `salary-payments`, `machinery-contacts`
 
 Export (read):
 - `GET /api/excel/export/personnel`

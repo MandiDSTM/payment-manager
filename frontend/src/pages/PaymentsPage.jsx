@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api, { canCreatePayment, isAdmin } from '../api';
 import SmartForm from '../components/SmartForm';
 import PaymentTable from '../components/PaymentTable';
+import PaymentExcelImport from '../components/PaymentExcelImport';
 import { downloadFormattedExcel, formatExportDate } from '../utils/excelExport';
 import { Button, Card, PageHeader, SearchInput } from '../components/ui';
 
@@ -9,7 +10,6 @@ function PaymentsPage() {
   const [allData, setAllData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isLocked, setIsLocked] = useState(true);
   const searchRef = useRef(null);
@@ -107,33 +107,13 @@ function PaymentsPage() {
     }
   };
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    setUploading(true);
-    try {
-      const res = await api.post('/upload-excel', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      alert(res.data.message);
-      fetchData();
-    } catch (err) {
-      alert('خطا در آپلود: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setUploading(false);
-      event.target.value = null;
-    }
-  };
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="پرداخت‌های عمومی"
-        description="جستجو با Ctrl+K · ویرایش جدول با فلش‌ها و Enter"
+        description="جستجو با Ctrl+K · ویرایش جدول با فلش‌ها و Enter · ورود گروهی با اکسل"
         actions={(
-          <>
+          <div className="flex flex-wrap gap-2 items-center">
             {isAdmin() && selectedIds.length > 0 && (
               <Button onClick={handleBulkComplete}>تایید پرداخت ({selectedIds.length})</Button>
             )}
@@ -144,15 +124,12 @@ function PaymentsPage() {
             )}
             <Button variant="secondary" onClick={exportToExcel}>خروجی اکسل</Button>
             {canCreatePayment() && (
-              <label className={`ui-btn ui-btn-primary cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
-                {uploading ? 'در حال پردازش...' : 'آپلود فایل'}
-                <input type="file" className="hidden" accept=".xlsx,.xls" onChange={handleFileUpload} disabled={uploading} />
-              </label>
+              <PaymentExcelImport kind="general" variant="toolbar" onDone={fetchData} />
             )}
             {isAdmin() && (
               <Button variant="danger" onClick={clearAllData}>پاکسازی</Button>
             )}
-          </>
+          </div>
         )}
       >
         <SearchInput
@@ -161,6 +138,11 @@ function PaymentsPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="جستجو در نام‌ها، سریال‌ها یا شماره شبا..."
         />
+        {canCreatePayment() && (
+          <p className="text-xs ui-muted mt-2">
+            ستون‌های اکسل: کد پرسنلی، نام، نام خانوادگی، تاریخ، مبلغ، سریال، شبا، بابت، توضیحات
+          </p>
+        )}
       </PageHeader>
 
       {canCreatePayment() && (

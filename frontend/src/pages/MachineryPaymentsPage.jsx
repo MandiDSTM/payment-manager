@@ -3,6 +3,7 @@ import api, { isAdmin, canEditCommercialPayment, isSelectablePermit, fileUrl } f
 import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
+import PaymentExcelImport from '../components/PaymentExcelImport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount } from '../utils/format';
 
@@ -254,8 +255,17 @@ function MachineryPaymentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="پرداخت ماشین‌آلات"
-        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K"
-        actions={canEditCommercialPayment() && <Button onClick={openCreate}>ثبت پرداخت جدید</Button>}
+        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
+        actions={canEditCommercialPayment() && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button onClick={openCreate}>ثبت پرداخت جدید</Button>
+            <PaymentExcelImport
+              kind="machinery"
+              variant="toolbar"
+              onDone={() => { fetchPayments(); fetchLookups(); }}
+            />
+          </div>
+        )}
       >
         <StatusTabs tabs={STATUS_TABS} value={activeStatus} onChange={setActiveStatus} />
         <SearchInput
@@ -265,6 +275,11 @@ function MachineryPaymentsPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="جستجو در پرداخت‌ها..."
         />
+        {canEditCommercialPayment() && (
+          <p className="text-xs ui-muted mt-2">
+            ستون‌های اکسل: کد طرف حساب، مبلغ، دسته‌بندی، ماه، مجری، پروژه، سریال مجوز، وضعیت
+          </p>
+        )}
       </PageHeader>
 
       {showForm && (

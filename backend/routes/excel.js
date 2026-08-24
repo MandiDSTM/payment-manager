@@ -1,12 +1,25 @@
 const express = require('express');
 const upload = require('../middleware/upload');
-const { requireAdmin, requireReadAccess } = require('../middleware/authorize');
+const {
+    requireAdmin,
+    requireReadAccess,
+    requirePaymentCreate,
+    requireCommercialPaymentWrite,
+} = require('../middleware/authorize');
 const {
     importPersonnel,
     previewPersonnel,
     confirmPersonnel,
     importPersonnelBulkUpdate,
     importMachineryContacts,
+    previewPayments,
+    confirmPayments,
+    previewCommercialPayments,
+    confirmCommercialPayments,
+    previewMachineryPayments,
+    confirmMachineryPayments,
+    previewSalaryPayments,
+    confirmSalaryPayments,
     downloadTemplate,
     exportPayments,
     exportByProject,
@@ -27,6 +40,15 @@ router.post('/excel/confirm/personnel', requireAdmin, confirmPersonnel);
 router.post('/excel/import/personnel', requireAdmin, upload.single('file'), importPersonnel);
 router.post('/excel/import/personnel-bulk-update', requireAdmin, upload.single('file'), importPersonnelBulkUpdate);
 router.post('/excel/import/machinery-contacts', requireAdmin, upload.single('file'), importMachineryContacts);
+
+router.post('/excel/preview/payments', requirePaymentCreate, upload.single('file'), previewPayments);
+router.post('/excel/confirm/payments', requirePaymentCreate, confirmPayments);
+router.post('/excel/preview/commercial-payments', requireCommercialPaymentWrite, upload.single('file'), previewCommercialPayments);
+router.post('/excel/confirm/commercial-payments', requireCommercialPaymentWrite, confirmCommercialPayments);
+router.post('/excel/preview/machinery-payments', requireCommercialPaymentWrite, upload.single('file'), previewMachineryPayments);
+router.post('/excel/confirm/machinery-payments', requireCommercialPaymentWrite, confirmMachineryPayments);
+router.post('/excel/preview/salary-payments', requireCommercialPaymentWrite, upload.single('file'), previewSalaryPayments);
+router.post('/excel/confirm/salary-payments', requireCommercialPaymentWrite, confirmSalaryPayments);
 
 router.get('/excel/export/payments', requireReadAccess, exportPayments);
 router.get('/excel/export/by-project', requireReadAccess, exportByProject);

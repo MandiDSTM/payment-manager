@@ -36,6 +36,23 @@
   - Enter بین فیلدها حرکت می‌کند
   - در آخر submit انجام می‌شود
 
+### `PersonnelExcelImport`
+`frontend/src/components/PersonnelExcelImport.jsx`
+- ورود گروهی پرسنل با پیش‌نمایش، انتخاب ردیف و تأیید
+- `GET /excel/template/personnel` + `POST /excel/preview/personnel` + `POST /excel/confirm/personnel`
+
+### `PaymentExcelImport`
+`frontend/src/components/PaymentExcelImport.jsx`
+- همان جریان پرسنل برای چهار نوع پرداخت (`kind`: `general` | `commercial` | `machinery` | `salary`)
+- دانلود قالب، آپلود، مودال پیش‌نمایش با چک‌باکس، ثبت انتخاب‌شده‌ها
+- برای حقوق: اگر فیلدهای مشترک خالی باشد، قبل از پیش‌نمایش ویزارد مرحله‌ای باز می‌شود
+
+### `SalaryImportDefaultsWizard`
+`frontend/src/components/SalaryImportDefaultsWizard.jsx`
+- پرسش مرحله‌ای دسته‌بندی، ماه، مجری، پروژه و سریال مجوز
+- مقدار انتخاب‌شده روی همه ردیف‌های فایل اعمال می‌شود
+- برای چند ردیف، سریال انتخابی نقطه شروع است و سریال‌های آزاد بعدی به ردیف‌های معتبر اختصاص داده می‌شود
+
 ### `PaymentTable`
 `frontend/src/components/PaymentTable.jsx`
 - جدول `payments` (legacy عمومی)

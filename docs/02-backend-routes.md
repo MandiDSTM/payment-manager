@@ -120,11 +120,20 @@
 در `backend/routes/excel.js`:
 - `GET /api/excel/logs` -> `excelController.getLogs`
 - `GET /api/excel/template/:type` -> `excelController.downloadTemplate`
+  - نوع‌ها: `personnel`, `payments`, `commercial-payments`, `machinery-payments`, `salary-payments`, `machinery-contacts`
 - `POST /api/excel/preview/personnel` -> `excelController.previewPersonnel`
 - `POST /api/excel/confirm/personnel` -> `excelController.confirmPersonnel`
 - `POST /api/excel/import/personnel` -> `excelController.importPersonnel`
 - `POST /api/excel/import/personnel-bulk-update` -> `excelController.importPersonnelBulkUpdate`
 - `POST /api/excel/import/machinery-contacts` -> `excelController.importMachineryContacts`
+- `POST /api/excel/preview/payments` -> `excelController.previewPayments` (admin/accountant)
+- `POST /api/excel/confirm/payments` -> `excelController.confirmPayments` (admin/accountant)
+- `POST /api/excel/preview/commercial-payments` -> `excelController.previewCommercialPayments` (admin/accountant)
+- `POST /api/excel/confirm/commercial-payments` -> `excelController.confirmCommercialPayments` (admin/accountant)
+- `POST /api/excel/preview/machinery-payments` -> `excelController.previewMachineryPayments` (admin/accountant)
+- `POST /api/excel/confirm/machinery-payments` -> `excelController.confirmMachineryPayments` (admin/accountant)
+- `POST /api/excel/preview/salary-payments` -> `excelController.previewSalaryPayments` (admin/accountant)
+- `POST /api/excel/confirm/salary-payments` -> `excelController.confirmSalaryPayments` (admin/accountant)
 - `GET /api/excel/export/payments` -> `excelController.exportPayments`
 - `GET /api/excel/export/by-project` -> `excelController.exportByProject`
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth`

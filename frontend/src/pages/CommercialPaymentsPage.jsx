@@ -3,6 +3,7 @@ import api, { isAdmin, canEditCommercialPayment, isSelectablePermit, fileUrl } f
 import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
+import PaymentExcelImport from '../components/PaymentExcelImport';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount, statusBadgeClass } from '../utils/format';
 
@@ -227,8 +228,17 @@ function CommercialPaymentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="پرداخت‌های تجاری"
-        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K"
-        actions={canEditCommercialPayment() && <Button onClick={openCreate}>ثبت پرداخت جدید</Button>}
+        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
+        actions={canEditCommercialPayment() && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button onClick={openCreate}>ثبت پرداخت جدید</Button>
+            <PaymentExcelImport
+              kind="commercial"
+              variant="toolbar"
+              onDone={() => { fetchPayments(); fetchLookups(); }}
+            />
+          </div>
+        )}
       >
         <StatusTabs tabs={STATUS_TABS} value={activeStatus} onChange={setActiveStatus} />
         <SearchInput
@@ -238,6 +248,11 @@ function CommercialPaymentsPage() {
           placeholder="جستجو در پرداخت‌ها..."
           className="mt-3"
         />
+        {canEditCommercialPayment() && (
+          <p className="text-xs ui-muted mt-2">
+            ستون‌های اکسل: کد طرف حساب / نام تجاری، مبلغ، دسته‌بندی، مجری، پروژه، سریال مجوز، وضعیت
+          </p>
+        )}
       </PageHeader>
 
       {showForm && (

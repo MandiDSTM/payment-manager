@@ -135,13 +135,22 @@
 - `previewPersonnel`, `confirmPersonnel`
   - پیش‌نمایش ردیف‌ها بدون insert؛ سپس ثبت انتخاب‌شده‌ها
   - در صورت تکراری بودن `کد پرسنلی` یا `کد ملی`: هیچ ردیفی ثبت نمی‌شود و خطا برمی‌گردد
+- `previewPayments` / `confirmPayments`
+  - ورود پرداخت‌های عمومی با پیش‌نمایش و انتخاب ردیف (مثل پرسنل)
+- `previewCommercialPayments` / `confirmCommercialPayments`
+- `previewMachineryPayments` / `confirmMachineryPayments`
+- `previewSalaryPayments` / `confirmSalaryPayments`
+  - resolve کردن مخاطب/دسته/مجری/پروژه/سریال از روی متن ستون‌ها
+  - سریال تکراری در فایل یا غیرقابل‌مصرف: ردیف غیرقابل انتخاب
+  - در confirm: داخل `db.transaction` سریال مصرف و پرداخت insert می‌شود
+  - اگر خطای مرجع/سریال باشد کل ثبت abort می‌شود (`409`)
 - `importPersonnel`, `importPersonnelBulkUpdate`, `importMachineryContacts`
   - parse با سرویس‌های اکسل
   - insert در جدول‌های مقصد
   - ثبت لاگ در `excel_logs`
   - پاک کردن فایل با `fs.unlink`
 - `downloadTemplate`
-  - ساخت workbook قالب (با `utils/excelHelpers.js`) برای انواع import
+  - ساخت workbook قالب (با `utils/excelHelpers.js`) برای انواع import شامل پرداخت‌ها
 - `exportPayments` و گزارش‌های grouped
   - خروجی اکسل از `services/excel/paymentExportService.js`
 - `getLogs`
