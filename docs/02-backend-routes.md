@@ -153,12 +153,12 @@
 
 ## 10) Lookups (داده‌های مرجع فرم‌ها)
 در `backend/routes/lookups.js`:
-- `GET /api/commercial-payment-categories`
-- `GET /api/salary-payment-categories`
-- `GET /api/machinery-payment-categories`
+- `GET/POST /api/commercial-payment-categories` + PUT/DELETE (admin)
+- `GET/POST /api/salary-payment-categories` + PUT/DELETE (admin)
+- `GET/POST /api/machinery-payment-categories` + PUT/DELETE (admin)
 - `GET /api/persian-months`
-- `GET /api/executors` + CRUD مجری‌ها
-- `GET /api/projects` + CRUD پروژه‌ها
+- `GET/POST /api/executors` + PUT/DELETE (admin)؛ مجری: `first_name` و `last_name` اجباری
+- `GET/POST /api/projects` + PUT/DELETE (admin)
 - `GET /api/users`
 
 ---

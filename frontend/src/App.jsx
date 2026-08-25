@@ -19,6 +19,7 @@ import PermissionSerialsPage from './pages/PermissionSerialsPage';
 import ExcelOperationsPage from './pages/ExcelOperationsPage';
 import UsersPage from './pages/UsersPage';
 import BackupPage from './pages/BackupPage';
+import LookupsPage from './pages/LookupsPage';
 import ThemePicker from './components/ui/ThemePicker';
 import { Button } from './components/ui';
 
@@ -49,6 +50,7 @@ const NAV_GROUPS = [
     id: 'system',
     label: 'سیستم',
     items: [
+      { id: 'lookups', label: 'پروژه و مجری', icon: '📁', adminOnly: true },
       { id: 'users', label: 'کاربران', icon: '👥', adminOnly: true },
       { id: 'backup', label: 'پشتیبان‌گیری', icon: '💾', adminOnly: true },
     ],
@@ -151,6 +153,8 @@ function App() {
         return <MachinesPage />;
       case 'machinery':
         return <MachineryContactsPage />;
+      case 'lookups':
+        return <LookupsPage />;
       case 'users':
         return <UsersPage />;
       case 'backup':

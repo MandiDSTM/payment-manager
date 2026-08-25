@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api, { isSelectablePermit } from '../api';
+import { executorLabel } from '../utils/lookups';
 import { Alert, Button, SelectField } from './ui';
 
 const MONTHLY_WORK = 'کارکرد ماهانه';
@@ -283,7 +284,7 @@ export default function SalaryImportDefaultsWizard({
               {step.key === 'executor' && (
                 <SelectField label={`${step.label} *`} required value={values.executor_id} onChange={(e) => setCurrentValue(e.target.value)}>
                   <option value="">انتخاب کنید</option>
-                  {executors.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  {executors.map((item) => <option key={item.id} value={item.id}>{executorLabel(item)}</option>)}
                 </SelectField>
               )}
               {step.key === 'project' && (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api, { isAdmin, canEditCommercialPayment, isSelectablePermit } from '../api';
+import { executorLabel } from '../utils/lookups';
 import {
   Button, Card, PageHeader, SearchInput, SelectField, StatusTabs, TextInput, DataTable,
 } from '../components/ui';
@@ -309,7 +310,7 @@ function SalaryPaymentsPage() {
             <SelectField label="مجری *" required inputRef={setRef(4)} onKeyDown={(e) => handleKeyDown(e, 4)}
               value={formData.executor_id} onChange={set('executor_id')}>
               <option value="">انتخاب</option>
-              {executors.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {executors.map((e) => <option key={e.id} value={e.id}>{executorLabel(e)}</option>)}
             </SelectField>
             <SelectField label="پروژه *" required inputRef={setRef(5)} onKeyDown={(e) => handleKeyDown(e, 5)}
               value={formData.project_id} onChange={set('project_id')}>

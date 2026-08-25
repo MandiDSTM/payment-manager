@@ -221,12 +221,14 @@ async function createExecutorsTable() {
   if (!exists) {
     await db.schema.createTable('executors', (table) => {
       table.increments('id').primary();
+      table.string('first_name').notNullable();
+      table.string('last_name').notNullable();
       table.string('name').notNullable().unique();
       table.timestamps(true, true);
     });
     await db('executors').insert([
-      { name: 'محمد علی نجفی' },
-      { name: 'حسن کریمی' },
+      { first_name: 'محمدعلی', last_name: 'نجفی', name: 'محمدعلی نجفی' },
+      { first_name: 'حسن', last_name: 'کریمی', name: 'حسن کریمی' },
     ]);
     console.log("✅ جدول 'executors' ساخته شد.");
   } else {
@@ -243,8 +245,10 @@ async function createProjectsTable() {
       table.timestamps(true, true);
     });
     await db('projects').insert([
-      { name: 'پروژه توسعه باغات' },
-      { name: 'پروژه زیرساخت' },
+      { name: 'دیزج ۲' },
+      { name: 'جلفا' },
+      { name: 'دفتر' },
+      { name: 'عمومی' },
     ]);
     console.log("✅ جدول 'projects' ساخته شد.");
   } else {

@@ -220,6 +220,12 @@ Logs:
 
 ---
 
+## `LookupsPage` (admin)
+- مدیریت پروژه، مجری و نوع پرداخت: `/projects`, `/executors`, `/salary-payment-categories`, `/commercial-payment-categories`, `/machinery-payment-categories`
+- دراپ‌داون صفحات تجاری / ماشین‌آلات / حقوق از همین داده‌ها پر می‌شود
+
+---
+
 ## `BackupPage` (admin)
 - `GET /api/backup/info`
 - `GET /api/backup/download` (blob)
