@@ -40,6 +40,15 @@
 `frontend/src/components/PersonnelExcelImport.jsx`
 - ورود گروهی پرسنل با پیش‌نمایش، انتخاب ردیف و تأیید
 - `GET /excel/template/personnel` + `POST /excel/preview/personnel` + `POST /excel/confirm/personnel`
+- اگر کد پرسنلی از قبل موجود باشد، کاربر می‌تواند جایگزینی را تأیید کند
+
+### `PersonnelStatCards`
+`frontend/src/components/PersonnelStatCards.jsx`
+- کارت‌های داشبورد شمارشی صفحه پرسنل؛ با کلیک فیلتر جدول عوض می‌شود
+
+### `PersonnelDuplicatesModal`
+`frontend/src/components/PersonnelDuplicatesModal.jsx`
+- ویزارد ادغام جفت‌به‌جفت: تجمیع فیلدهای مکمل، انتخاب رکورد اول، یا انتخاب رکورد دوم؛ اگر در تجمیع هر دو مقدار متفاوت باشند (از جمله کد پرسنلی) کاربر مرحله‌ای مقدار اصلی هر فیلد را انتخاب می‌کند؛ گروه‌های بیش از دو عضو پشت‌سرهم ادغام می‌شوند
 
 ### `PaymentExcelImport`
 `frontend/src/components/PaymentExcelImport.jsx`

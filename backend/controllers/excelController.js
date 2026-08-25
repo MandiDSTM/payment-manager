@@ -86,11 +86,14 @@ const confirmPersonnel = async (req, res) => {
 
         const result = await personnelExcel.confirmImport(records, {
             onlyFullyValid: Boolean(req.body?.onlyFullyValid),
+            replaceExisting: Boolean(req.body?.replaceExisting),
         });
         if (result.aborted) {
             return res.status(409).json({
-                message: 'ثبت انجام نشد؛ کد پرسنلی یا کد ملی تکراری است',
+                message: 'ثبت انجام نشد؛ کد پرسنلی در فایل تکراری است یا کد ملی متعلق به فرد دیگری است',
                 imported: 0,
+                updated: 0,
+                skipped: 0,
                 failed: result.errors.length,
                 errors: result.errors,
                 aborted: true,
@@ -101,14 +104,21 @@ const confirmPersonnel = async (req, res) => {
             operationType: 'import_personnel',
             fileName: req.body?.fileName || null,
             userId: resolveRecordedByUserId(req),
-            imported: result.inserted,
-            failed: 0,
+            imported: (result.inserted || 0) + (result.updated || 0),
+            failed: result.skipped || 0,
             errors: [],
         });
 
+        const parts = [];
+        if (result.inserted) parts.push(`${result.inserted} نفر ثبت شد`);
+        if (result.updated) parts.push(`${result.updated} نفر جایگزین شد`);
+        if (result.skipped) parts.push(`${result.skipped} نفر تکراری بدون جایگزینی رد شد`);
+
         res.json({
-            message: `${result.inserted} پرسنل با موفقیت ثبت شد`,
+            message: parts.length > 0 ? parts.join('، ') : 'ردیفی برای ثبت باقی نماند',
             imported: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
             failed: 0,
             errors: [],
             aborted: false,
@@ -391,9 +401,16 @@ const exportBySerial = async (_req, res) => {
     }
 };
 
-const exportPersonnel = async (_req, res) => {
+const parseIdList = (raw) => {
+    if (raw === undefined || raw === null || raw === '') return null;
+    const ids = [...new Set(String(raw).split(',').map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+    return ids;
+};
+
+const exportPersonnel = async (req, res) => {
     try {
-        const buffer = await personnelExcel.exportPersonnelList();
+        const ids = parseIdList(req.query.ids);
+        const buffer = await personnelExcel.exportPersonnelList(ids);
         sendExcelBuffer(res, buffer, `personnel-${Date.now()}.xlsx`);
     } catch (error) {
         res.status(500).json({ message: error.message });

@@ -177,28 +177,81 @@ const markDuplicateErrors = (rows, field, label) => {
     });
 };
 
-const attachDbUniquenessErrors = async (rows) => {
+const CONTACT_FIELDS = [
+    'national_id',
+    'first_name',
+    'last_name',
+    'father_name',
+    'sheba',
+    'account_holder_name',
+    'mobile',
+    'city',
+    'description',
+];
+
+const applyIncomingOverExisting = (existing, incoming) => {
+    const next = {
+        personnel_code: existing.personnel_code,
+        national_id: existing.national_id || null,
+        first_name: existing.first_name,
+        last_name: existing.last_name,
+        father_name: existing.father_name || null,
+        sheba: existing.sheba || '',
+        account_holder_name: existing.account_holder_name,
+        mobile: existing.mobile || null,
+        city: existing.city || null,
+        description: existing.description || null,
+    };
+    CONTACT_FIELDS.forEach((field) => {
+        const value = incoming[field];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+            next[field] = incoming[field];
+        }
+    });
+    next.sheba_needs_review = incoming.sheba_needs_review === true || incoming.sheba_needs_review === 1
+        ? true
+        : !isValidSheba(next.sheba);
+    return next;
+};
+
+const attachDbMatches = async (rows) => {
     const codes = [...new Set(rows.map((r) => r.data.personnel_code).filter(Boolean))];
     const nationalIds = [...new Set(rows.map((r) => r.data.national_id).filter(Boolean))];
 
     const existingByCode = codes.length > 0
-        ? await db('personnel_contacts').whereIn('personnel_code', codes).select('personnel_code')
+        ? await db('personnel_contacts').whereIn('personnel_code', codes).select('*')
         : [];
     const existingByNationalId = nationalIds.length > 0
-        ? await db('personnel_contacts').whereIn('national_id', nationalIds).select('national_id')
+        ? await db('personnel_contacts').whereIn('national_id', nationalIds).select('id', 'national_id', 'personnel_code')
         : [];
 
-    const codeSet = new Set(existingByCode.map((r) => r.personnel_code));
-    const nationalIdSet = new Set(existingByNationalId.map((r) => r.national_id));
+    const codeMap = new Map(existingByCode.map((r) => [r.personnel_code, r]));
+    const nationalIdMap = new Map(existingByNationalId.map((r) => [r.national_id, r]));
 
     rows.forEach((item) => {
-        if (!item.code_generated && item.data.personnel_code && codeSet.has(item.data.personnel_code)) {
-            const message = `کد پرسنلی ${item.data.personnel_code} قبلاً در دیتابیس ثبت شده`;
-            if (!item.errors.includes(message)) item.errors.push(message);
+        const match = !item.code_generated && item.data.personnel_code
+            ? codeMap.get(item.data.personnel_code)
+            : null;
+        if (match) {
+            item.existsInDb = true;
+            item.existingId = match.id;
+            item.existingSummary = {
+                id: match.id,
+                first_name: match.first_name,
+                last_name: match.last_name,
+                national_id: match.national_id || null,
+                sheba: match.sheba || '',
+            };
+            const info = `این کد پرسنلی از قبل در دیتابیس است (${match.first_name} ${match.last_name}) — در صورت تأیید جایگزین می‌شود`;
+            if (!item.infos.includes(info)) item.infos.push(info);
         }
-        if (item.data.national_id && nationalIdSet.has(item.data.national_id)) {
-            const message = `کد ملی ${item.data.national_id} قبلاً در دیتابیس ثبت شده`;
-            if (!item.errors.includes(message)) item.errors.push(message);
+
+        if (item.data.national_id) {
+            const owner = nationalIdMap.get(item.data.national_id);
+            if (owner && owner.personnel_code !== item.data.personnel_code) {
+                const message = `کد ملی ${item.data.national_id} متعلق به پرسنل دیگری است (${owner.personnel_code})`;
+                if (!item.errors.includes(message)) item.errors.push(message);
+            }
         }
     });
 };
@@ -281,7 +334,7 @@ const parsePreview = async (filePath) => {
     assignMissingPersonnelCodes(rows, usedCodes);
     markDuplicateErrors(rows, 'personnel_code', 'کد پرسنلی');
     markDuplicateErrors(rows, 'national_id', 'کد ملی');
-    await attachDbUniquenessErrors(rows);
+    await attachDbMatches(rows);
 
     return {
         headers,
@@ -298,6 +351,9 @@ const parsePreview = async (filePath) => {
                 },
                 selectable: !hasHardError,
                 is_fully_valid: !hasHardError && !item.sheba_needs_review,
+                existsInDb: !!item.existsInDb,
+                existingId: item.existingId || null,
+                existingSummary: item.existingSummary || null,
             };
         }),
     };
@@ -362,33 +418,24 @@ const collectUniquenessErrors = async (records) => {
         .map((item, index) => ({ row: item.row ?? index + 1, data: item.data || item }))
         .filter((item) => hardValidateContact(item.data).length === 0);
 
-    const codes = [...new Set(validContacts.map((r) => r.data.personnel_code))];
     const nationalIds = [...new Set(validContacts.map((r) => r.data.national_id).filter(Boolean))];
 
-    const existingByCode = codes.length > 0
-        ? await db('personnel_contacts').whereIn('personnel_code', codes).select('personnel_code')
-        : [];
     const existingByNationalId = nationalIds.length > 0
-        ? await db('personnel_contacts').whereIn('national_id', nationalIds).select('national_id')
+        ? await db('personnel_contacts').whereIn('national_id', nationalIds).select('national_id', 'personnel_code')
         : [];
 
-    const codeSet = new Set(existingByCode.map((r) => r.personnel_code));
-    const nationalIdSet = new Set(existingByNationalId.map((r) => r.national_id));
+    const nidOwnerByValue = new Map(existingByNationalId.map((r) => [r.national_id, r.personnel_code]));
 
     validContacts.forEach((item) => {
-        if (codeSet.has(item.data.personnel_code)) {
-            errors.push({
-                row: item.row,
-                message: `کد پرسنلی ${item.data.personnel_code} قبلاً در دیتابیس ثبت شده`,
-                field: 'personnel_code',
-            });
-        }
-        if (item.data.national_id && nationalIdSet.has(item.data.national_id)) {
-            errors.push({
-                row: item.row,
-                message: `کد ملی ${item.data.national_id} قبلاً در دیتابیس ثبت شده`,
-                field: 'national_id',
-            });
+        if (item.data.national_id) {
+            const ownerCode = nidOwnerByValue.get(item.data.national_id);
+            if (ownerCode && ownerCode !== item.data.personnel_code) {
+                errors.push({
+                    row: item.row,
+                    message: `کد ملی ${item.data.national_id} متعلق به پرسنل دیگری است (${ownerCode})`,
+                    field: 'national_id',
+                });
+            }
         }
     });
 
@@ -404,7 +451,7 @@ const collectUniquenessErrors = async (records) => {
     return uniqueErrors;
 };
 
-const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
+const confirmImport = async (records, { onlyFullyValid = false, replaceExisting = false } = {}) => {
     if (!Array.isArray(records) || records.length === 0) {
         throw new Error('NO_RECORDS_SELECTED');
     }
@@ -444,35 +491,62 @@ const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
 
     const uniquenessErrors = await collectUniquenessErrors(selected);
     if (uniquenessErrors.length > 0) {
-        return { inserted: 0, errors: uniquenessErrors, aborted: true };
+        return { inserted: 0, updated: 0, skipped: 0, errors: uniquenessErrors, aborted: true };
     }
 
-    const payload = selected.map((item) => {
-        const contact = item.data;
-        return {
-            personnel_code: contact.personnel_code,
-            national_id: contact.national_id || null,
-            first_name: contact.first_name,
-            last_name: contact.last_name,
-            father_name: contact.father_name || null,
-            sheba: contact.sheba || '',
-            sheba_needs_review: contact.sheba_needs_review ? 1 : 0,
-            account_holder_name: contact.account_holder_name,
-            mobile: contact.mobile || null,
-            city: contact.city || null,
-            description: contact.description || null,
-        };
+    const codes = [...new Set(selected.map((item) => item.data.personnel_code).filter(Boolean))];
+    const existingRows = codes.length > 0
+        ? await db('personnel_contacts').whereIn('personnel_code', codes).select('*')
+        : [];
+    const existingByCode = new Map(existingRows.map((row) => [row.personnel_code, row]));
+
+    const toInsert = [];
+    const toUpdate = [];
+    let skipped = 0;
+
+    selected.forEach((item) => {
+        const existing = existingByCode.get(item.data.personnel_code);
+        if (existing) {
+            if (replaceExisting) toUpdate.push({ existing, incoming: item.data, row: item.row });
+            else skipped += 1;
+            return;
+        }
+        toInsert.push({
+            personnel_code: item.data.personnel_code,
+            national_id: item.data.national_id || null,
+            first_name: item.data.first_name,
+            last_name: item.data.last_name,
+            father_name: item.data.father_name || null,
+            sheba: item.data.sheba || '',
+            sheba_needs_review: item.data.sheba_needs_review ? 1 : 0,
+            account_holder_name: item.data.account_holder_name,
+            mobile: item.data.mobile || null,
+            city: item.data.city || null,
+            description: item.data.description || null,
+        });
     });
 
     try {
         await db.transaction(async (trx) => {
-            await insertInChunks(trx, 'personnel_contacts', payload);
+            if (toInsert.length > 0) {
+                await insertInChunks(trx, 'personnel_contacts', toInsert);
+            }
+            for (const item of toUpdate) {
+                const next = applyIncomingOverExisting(item.existing, item.incoming);
+                await trx('personnel_contacts').where({ id: item.existing.id }).update({
+                    ...next,
+                    sheba_needs_review: next.sheba_needs_review ? 1 : 0,
+                    updated_at: trx.fn.now(),
+                });
+            }
         });
     } catch (error) {
         const described = describeSqliteWriteError(error);
         if (described?.status === 409) {
             return {
                 inserted: 0,
+                updated: 0,
+                skipped: 0,
                 errors: [{ row: '—', message: described.message }],
                 aborted: true,
             };
@@ -483,7 +557,13 @@ const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
         throw error;
     }
 
-    return { inserted: payload.length, errors: [], aborted: false };
+    return {
+        inserted: toInsert.length,
+        updated: toUpdate.length,
+        skipped,
+        errors: [],
+        aborted: false,
+    };
 };
 
 /** Legacy one-shot import: only inserts rows without uniqueness/validation issues. */
@@ -624,9 +704,19 @@ const formatContactDate = (value) => {
     }
 };
 
-const exportPersonnelList = async () => {
-    const contacts = await db('personnel_contacts')
-        .select('*')
+const exportPersonnelList = async (ids) => {
+    let query = db('personnel_contacts').select('*');
+    if (Array.isArray(ids)) {
+        if (ids.length === 0) {
+            return buildWorkbookBuffer('پرسنل', [], {
+                title: 'خروجی لیست پرسنل',
+                columns: PERSONNEL_EXPORT_COLUMNS,
+                textColumns: ['کد پرسنلی', 'کد ملی', 'شماره شبا', 'موبایل'],
+            });
+        }
+        query = query.whereIn('id', ids);
+    }
+    const contacts = await query
         .orderBy('personnel_code', 'asc')
         .orderBy('id', 'asc');
 

@@ -50,8 +50,11 @@
 ### 5.2) Personnel contacts
 در `backend/routes/personnelContacts.js`:
 - `GET /api/personnel-contacts`
+- `GET /api/personnel-contacts/duplicates` (admin)
 - `GET /api/personnel-contacts/:id`
 - `POST /api/personnel-contacts` (admin)
+- `POST /api/personnel-contacts/bulk-delete` (admin)
+- `POST /api/personnel-contacts/merge` (admin): `{ firstId, secondId, mode, fieldChoices? }` که `mode` یکی از `union` | `keep_first` | `keep_second` است؛ در تجمیع اگر فیلدی در هر دو مقدار متفاوت داشته باشد با `409` و `conflicts` برمی‌گردد تا کاربر برای هر فیلد `first` یا `second` را در `fieldChoices` بفرستد
 - `PUT /api/personnel-contacts/:id` (admin)
 - `DELETE /api/personnel-contacts/:id` (admin)
 
@@ -144,7 +147,7 @@
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth`
 - `GET /api/excel/export/by-executor` -> `excelController.exportByExecutor`
 - `GET /api/excel/export/by-serial` -> `excelController.exportBySerial`
-- `GET /api/excel/export/personnel` -> `excelController.exportPersonnel`
+- `GET /api/excel/export/personnel` -> `excelController.exportPersonnel` (اختیاری: `ids=1,2,3` برای خروجی همان فهرست فیلترشده)
 
 ---
 

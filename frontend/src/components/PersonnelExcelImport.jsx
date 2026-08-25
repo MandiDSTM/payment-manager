@@ -32,7 +32,7 @@ function StatusCell({ item }) {
       {infos.map((info, i) => (
         <div key={`i-${i}`} className="ui-muted">{info}</div>
       ))}
-      {warnings.length === 0 && (
+      {warnings.length === 0 && infos.length === 0 && (
         <span style={{ color: 'var(--success)' }}>آماده ثبت</span>
       )}
     </div>
@@ -46,7 +46,9 @@ function PersonnelImportModal({
   confirming,
   confirmError,
   onlyFullyValid,
+  replaceExisting,
   onOnlyFullyValidChange,
+  onReplaceExistingChange,
   onClose,
   onConfirm,
   onToggle,
@@ -58,6 +60,7 @@ function PersonnelImportModal({
   const selectableRows = rows.filter((r) => r.selectable);
   const fullyValidRows = rows.filter((r) => r.is_fully_valid);
   const selectedCount = rows.filter((r) => r.selected).length;
+  const existingSelected = rows.filter((r) => r.selected && r.existsInDb).length;
   const allSelectableChecked = selectableRows.length > 0
     && selectableRows.every((r) => r.selected);
 
@@ -76,7 +79,7 @@ function PersonnelImportModal({
             پیش‌نمایش ورود پرسنل
           </h3>
           <p className="text-sm ui-muted">
-            {fileName || 'فایل اکسل'} — کد پرسنلی خالی خودکار ساخته می‌شود. شبا نامعتبر با فلگ «نیاز به اصلاح» قابل ثبت است.
+            {fileName || 'فایل اکسل'} — کد پرسنلی خالی خودکار ساخته می‌شود. ردیف‌های آبی از قبل در دیتابیس هستند.
           </p>
         </div>
 
@@ -133,9 +136,11 @@ function PersonnelImportModal({
                 ) : (
                   rows.map((item) => {
                     const hasError = item.errors?.length > 0;
-                    const hasWarning = !hasError && (item.warnings?.length > 0 || item.sheba_needs_review);
+                    const hasExisting = !hasError && item.existsInDb;
+                    const hasWarning = !hasError && !hasExisting && (item.warnings?.length > 0 || item.sheba_needs_review);
                     let rowBg;
                     if (hasError) rowBg = 'var(--danger-soft)';
+                    else if (hasExisting) rowBg = 'var(--primary-soft)';
                     else if (hasWarning) rowBg = 'color-mix(in srgb, #f59e0b 18%, transparent)';
 
                     return (
@@ -173,6 +178,22 @@ function PersonnelImportModal({
         </div>
 
         <div className="p-5 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+          {existingSelected > 0 && (
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={replaceExisting}
+                onChange={(e) => onReplaceExistingChange(e.target.checked)}
+              />
+              <span>
+                این داده‌ها درون دیتابیس هستند؛ جایگزین شوند؟
+                <span className="ui-muted block">
+                  {existingSelected} ردیف با همان کد پرسنلی از قبل ثبت شده. در صورت تأیید، فیلدهای پر فایل (مثل کد ملی) روی رکورد قبلی نوشته می‌شود.
+                </span>
+              </span>
+            </label>
+          )}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -206,6 +227,7 @@ export default function PersonnelExcelImport({ onDone, variant = 'card' }) {
   const [rows, setRows] = useState([]);
   const [confirmError, setConfirmError] = useState(null);
   const [onlyFullyValid, setOnlyFullyValid] = useState(false);
+  const [replaceExisting, setReplaceExisting] = useState(false);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -214,6 +236,7 @@ export default function PersonnelExcelImport({ onDone, variant = 'card' }) {
     setResult(null);
     setConfirmError(null);
     setOnlyFullyValid(false);
+    setReplaceExisting(false);
     const form = new FormData();
     form.append('file', file);
     try {
@@ -295,6 +318,7 @@ export default function PersonnelExcelImport({ onDone, variant = 'card' }) {
       const res = await api.post('/excel/confirm/personnel', {
         fileName,
         onlyFullyValid,
+        replaceExisting,
         records: selected.map((r) => ({
           row: r.row,
           data: r.data,
@@ -347,7 +371,9 @@ export default function PersonnelExcelImport({ onDone, variant = 'card' }) {
       confirming={confirming}
       confirmError={confirmError}
       onlyFullyValid={onlyFullyValid}
+      replaceExisting={replaceExisting}
       onOnlyFullyValidChange={setOnlyFullyValid}
+      onReplaceExistingChange={setReplaceExisting}
       onClose={() => !confirming && setModalOpen(false)}
       onConfirm={handleConfirm}
       onSelectFullyValid={() => {

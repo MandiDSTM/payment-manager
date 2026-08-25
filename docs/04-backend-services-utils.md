@@ -50,6 +50,7 @@
   - پشتیبانی از فایل‌های HR با هدر دو ردیفه و ستون‌های «نام و نام خانوادگی پرسنل»، «کد ملی» (اختیاری)، «نام پدر»، «کد پرسنلی»
   - `parsePreview` + `confirmImport` (مودال انتخاب قبل از ثبت)
   - یکتایی `personnel_code` و در صورت پر بودن `national_id` (داخل فایل و دیتابیس)
+  - اگر کد پرسنلی از قبل موجود باشد ردیف قابل انتخاب می‌ماند و با `replaceExisting` فیلدهای پر فایل جایگزین می‌شود
   - ثبت در دسته‌های کوچک تا محدودیت UNION ALL در SQLite رخ ندهد
 - `backend/services/excel/generalPaymentsExcelService.js`
   - ورود پرداخت‌های عمومی با `parsePreview` + `confirmImport`

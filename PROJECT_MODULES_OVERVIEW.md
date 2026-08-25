@@ -165,6 +165,7 @@
 #### 11) Personnel Contacts
 در `backend/routes/personnelContacts.js`:
 - `GET /api/personnel-contacts` / `GET /api/personnel-contacts/:id` -> `personnelContactsController` (read)
+- `GET /api/personnel-contacts/duplicates` / `POST /api/personnel-contacts/bulk-delete` / `POST /api/personnel-contacts/merge` (admin)
 - `POST /api/personnel-contacts` / `PUT ...` / `DELETE ...` -> (admin)
 
 #### 12) Permission Serials (سریال/مجوز پرداخت)
@@ -547,6 +548,7 @@
   - PUT `/personnel-contacts/:id`
   - DELETE `/personnel-contacts/:id`
   - `national_id` اختیاری است؛ نام پدر در `father_name` ذخیره می‌شود
+  - حذف گروهی و ادغام موارد مشابه (admin)
 
 #### `frontend/src/pages/PermissionSerialsPage.jsx`
 - مدیریت سریال/مجوز پرداخت:

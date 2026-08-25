@@ -1,10 +1,13 @@
 const express = require('express');
 const { requireAdmin, requireReadAccess } = require('../middleware/authorize');
-const { getAll, getById, create, update, remove } = require('../controllers/personnelContactsController');
+const { getAll, getById, create, update, remove, bulkRemove, getDuplicateGroups, mergeDuplicates } = require('../controllers/personnelContactsController');
 
 const router = express.Router();
 
 router.get('/personnel-contacts', requireReadAccess, getAll);
+router.get('/personnel-contacts/duplicates', requireAdmin, getDuplicateGroups);
+router.post('/personnel-contacts/bulk-delete', requireAdmin, bulkRemove);
+router.post('/personnel-contacts/merge', requireAdmin, mergeDuplicates);
 router.get('/personnel-contacts/:id', requireReadAccess, getById);
 router.post('/personnel-contacts', requireAdmin, create);
 router.put('/personnel-contacts/:id', requireAdmin, update);

@@ -154,6 +154,9 @@ Lookups:
   - `DELETE /api/personnel-contacts/:id`
   - ورود اکسل از همین صفحه: پیش‌نمایش + تأیید (`/excel/preview/personnel` و `/excel/confirm/personnel`)
   - `national_id` اختیاری است؛ فیلد فرم «نام پدر» در ستون `father_name` ذخیره می‌شود
+  - حذف گروهی (admin): `POST /api/personnel-contacts/bulk-delete`
+  - داشبورد آماری روی همان صفحه: موارد مشابه، بدون کد ملی، کد ملی نامعتبر، شبا نامعتبر، کد پرسنلی AUTO-
+  - کلیک روی کارت، جدول را فیلتر می‌کند؛ `GET /api/excel/export/personnel?ids=` خروجی همان فهرست را می‌دهد
 
 ---
 
