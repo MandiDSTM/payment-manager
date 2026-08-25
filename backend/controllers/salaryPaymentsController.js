@@ -110,6 +110,8 @@ const create = async (req, res) => {
         const description = buildDescription({
             categoryName: context.category.name,
             month: payload.month,
+            personnelName: `${context.contact.first_name || ''} ${context.contact.last_name || ''}`.trim(),
+            personnelCode: context.contact.personnel_code,
             executorName: context.executor.name,
             serialNumber: context.serial.serial_number,
             projectName: context.project.name,
@@ -161,6 +163,8 @@ const update = async (req, res) => {
         const description = buildDescription({
             categoryName: context.category.name,
             month: payload.month,
+            personnelName: `${context.contact.first_name || ''} ${context.contact.last_name || ''}`.trim(),
+            personnelCode: context.contact.personnel_code,
             executorName: context.executor.name,
             serialNumber: context.serial.serial_number,
             projectName: context.project.name,

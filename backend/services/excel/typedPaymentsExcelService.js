@@ -147,6 +147,9 @@ const resolveTypedRow = (normalized, lookups, config) => {
     if (!status) {
         status = config.defaultStatus;
         infos.push(`وضعیت خالی بود؛ «${status}» در نظر گرفته شد`);
+    } else if (config.kind === 'salary' && status === 'ثبت نشده') {
+        status = config.defaultStatus;
+        infos.push(`وضعیت «ثبت نشده» به «${status}» تبدیل شد`);
     } else if (!config.statuses.includes(status)) {
         errors.push(`وضعیت «${status}» نامعتبر است`);
     }
@@ -164,6 +167,10 @@ const resolveTypedRow = (normalized, lookups, config) => {
 
     const display = {
         contact: contact.record ? config.contactDisplay(contact.record) : (normalized.contactKey || '—'),
+        personnel_name: contact.record
+            ? `${contact.record.first_name || ''} ${contact.record.last_name || ''}`.trim()
+            : '',
+        personnel_code: contact.record?.personnel_code || '',
         amount: data.amount,
         category: category.record?.name || normalized.category || '—',
         month: config.hasMonth ? (month || '—') : null,
@@ -303,7 +310,9 @@ const validateConfirmRecord = (item, lookups, config) => {
         else if (!PERSIAN_MONTHS.includes(data.month)) errors.push('ماه نامعتبر است');
     }
 
-    const status = data.status || config.defaultStatus;
+    const status = (config.kind === 'salary' && data.status === 'ثبت نشده')
+        ? config.defaultStatus
+        : (data.status || config.defaultStatus);
     if (!config.statuses.includes(status)) errors.push('وضعیت پرداخت نامعتبر است');
 
     return {
@@ -548,9 +557,11 @@ const salaryConfig = {
     hasAccountingFlag: true,
     loadContacts: () => db('personnel_contacts').select('*'),
     contactDisplay: (c) => `${c.personnel_code} — ${c.first_name} ${c.last_name}`,
-    buildDescription: ({ category, executor, project, serial, month }) => salaryPaymentService.buildDescription({
+    buildDescription: ({ category, executor, project, serial, month, contact }) => salaryPaymentService.buildDescription({
         categoryName: category.name,
         month,
+        personnelName: `${contact.first_name || ''} ${contact.last_name || ''}`.trim(),
+        personnelCode: contact.personnel_code,
         executorName: executor.name,
         serialNumber: serial.serial_number,
         projectName: project.name,

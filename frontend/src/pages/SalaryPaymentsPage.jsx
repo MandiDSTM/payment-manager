@@ -10,7 +10,6 @@ import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 import { formatAmount } from '../utils/format';
 
 const STATUS_TABS = [
-  { value: 'ثبت نشده', label: 'ثبت نشده' },
   { value: 'در انتظار پرداخت', label: 'در انتظار پرداخت' },
   { value: 'در جریان پرداخت', label: 'در جریان پرداخت' },
   { value: 'پرداخت شده', label: 'پرداخت شده' },
@@ -33,11 +32,21 @@ const emptyForm = () => ({
   status: AWAITING_PAYMENT,
 });
 
-function buildPreview({ categoryName, month, executorName, serialNumber, projectName }) {
+function buildPreview({
+  categoryName,
+  month,
+  personnelName,
+  personnelCode,
+  executorName,
+  serialNumber,
+  projectName,
+}) {
   if (!categoryName || !executorName || !serialNumber || !projectName) return '';
+  const person = [String(personnelName || '').trim(), String(personnelCode || '').trim()].filter(Boolean).join('_');
   const tail = `${executorName} - ${serialNumber} / ${projectName}`;
-  if (categoryName === MONTHLY_WORK) return `کارکرد ${month} - ${tail}`;
-  return `${categoryName} - ${tail}`;
+  const rest = person ? `${person} - ${tail}` : tail;
+  if (categoryName === MONTHLY_WORK) return `کارکرد ${month} - ${rest}`;
+  return `${categoryName} - ${rest}`;
 }
 
 function SalaryPaymentsPage() {
@@ -105,17 +114,20 @@ function SalaryPaymentsPage() {
 
   const previewDescription = useMemo(() => {
     const category = categories.find((c) => c.id === Number(formData.category_id));
+    const person = personnel.find((p) => p.id === Number(formData.personnel_contact_id));
     const executor = executors.find((e) => e.id === Number(formData.executor_id));
     const project = projects.find((p) => p.id === Number(formData.project_id));
     const serial = serials.find((s) => s.id === Number(formData.permission_serial_id));
     return buildPreview({
       categoryName: category?.name,
       month: formData.month,
+      personnelName: person ? `${person.first_name || ''} ${person.last_name || ''}`.trim() : '',
+      personnelCode: person?.personnel_code,
       executorName: executor?.name,
       serialNumber: serial?.serial_number,
       projectName: project?.name,
     });
-  }, [formData, categories, executors, projects, serials]);
+  }, [formData, personnel, categories, executors, projects, serials]);
 
   const filtered = payments.filter((p) => {
     const text = [p.personnel_code, p.first_name, p.last_name, p.description, p.category_name, p.month].join(' ').toLowerCase();

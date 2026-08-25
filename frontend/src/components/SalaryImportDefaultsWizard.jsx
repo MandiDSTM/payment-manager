@@ -13,11 +13,21 @@ const ALL_STEPS = [
   { key: 'serial', label: 'سریال مجوز پرداخت' },
 ];
 
-export function buildSalaryDescription({ categoryName, month, executorName, serialNumber, projectName }) {
+export function buildSalaryDescription({
+  categoryName,
+  month,
+  personnelName,
+  personnelCode,
+  executorName,
+  serialNumber,
+  projectName,
+}) {
   if (!categoryName || !executorName || !serialNumber || !projectName) return '';
+  const person = [String(personnelName || '').trim(), String(personnelCode || '').trim()].filter(Boolean).join('_');
   const tail = `${executorName} - ${serialNumber} / ${projectName}`;
-  if (categoryName === MONTHLY_WORK) return `کارکرد ${month} - ${tail}`;
-  return `${categoryName} - ${tail}`;
+  const rest = person ? `${person} - ${tail}` : tail;
+  if (categoryName === MONTHLY_WORK) return `کارکرد ${month} - ${rest}`;
+  return `${categoryName} - ${rest}`;
 }
 
 export function countSalaryAssignableRows(rows) {
@@ -60,6 +70,8 @@ export function applySalarySharedDefaults(rows, defaults) {
     display.description = buildSalaryDescription({
       categoryName: display.category,
       month: data.month,
+      personnelName: display.personnel_name,
+      personnelCode: display.personnel_code,
       executorName: display.executor,
       serialNumber: display.serial,
       projectName: display.project,

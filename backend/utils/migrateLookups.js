@@ -34,6 +34,16 @@ const migrateLookups = async () => {
             if (!exists) await db('projects').insert({ name });
         }
     }
+
+    const hasSalary = await db.schema.hasTable('salary_payments');
+    if (hasSalary) {
+        const moved = await db('salary_payments')
+            .where({ status: 'ثبت نشده' })
+            .update({ status: 'در انتظار پرداخت' });
+        if (moved) {
+            console.log(`ℹ️ ${moved} پرداخت حقوق از «ثبت نشده» به «در انتظار پرداخت» منتقل شد.`);
+        }
+    }
 };
 
 module.exports = migrateLookups;

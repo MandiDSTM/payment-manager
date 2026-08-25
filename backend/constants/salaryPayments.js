@@ -1,12 +1,10 @@
 const STATUS = {
-    UNREGISTERED: 'ثبت نشده',
     AWAITING_PAYMENT: 'در انتظار پرداخت',
     IN_PROGRESS: 'در جریان پرداخت',
     PAID: 'پرداخت شده',
 };
 
 const PAYMENT_STATUSES = [
-    STATUS.UNREGISTERED,
     STATUS.AWAITING_PAYMENT,
     STATUS.IN_PROGRESS,
     STATUS.PAID,

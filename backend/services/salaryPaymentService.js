@@ -4,17 +4,23 @@ const { MONTHLY_WORK_CATEGORY } = require('../constants/salaryPayments');
 const buildDescription = ({
     categoryName,
     month,
+    personnelName,
+    personnelCode,
     executorName,
     serialNumber,
     projectName,
 }) => {
+    const person = [String(personnelName || '').trim(), String(personnelCode || '').trim()]
+        .filter(Boolean)
+        .join('_');
     const tail = `${executorName} - ${serialNumber} / ${projectName}`;
+    const rest = person ? `${person} - ${tail}` : tail;
 
     if (categoryName === MONTHLY_WORK_CATEGORY) {
-        return `کارکرد ${month} - ${tail}`;
+        return `کارکرد ${month} - ${rest}`;
     }
 
-    return `${categoryName} - ${tail}`;
+    return `${categoryName} - ${rest}`;
 };
 
 const loadPaymentContext = async ({

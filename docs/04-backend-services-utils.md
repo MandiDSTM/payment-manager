@@ -41,7 +41,7 @@
 - `loadPaymentContext`
   - پرسنل + category + executor + project + serial
 - `buildDescription`
-  - اگر category برابر `کارکرد ماهانه` باشد، فرمت خاص می‌دهد
+  - بعد از دسته‌بندی/ماه، `نام پرسنل_کدپرسنلی` می‌آید و بعد مجری، سریال و پروژه
 
 ### Services مربوط به Excel
 - `backend/services/excelService.js`
