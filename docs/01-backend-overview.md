@@ -25,7 +25,7 @@
 - `users`: کاربران با `role` و `is_blocked`
 - مخاطبین:
   - `business_contacts`
-  - `personnel_contacts`: مخاطبین پرسنل (`personnel_code` و `national_id` یکتا؛ `sheba_needs_review` برای شبا نامعتبر)
+  - `personnel_contacts`: مخاطبین پرسنل (`personnel_code` یکتا؛ `national_id` اختیاری و در صورت پر بودن یکتا؛ `father_name`؛ `sheba_needs_review` برای شبا نامعتبر)
   - `machines`
   - `machinery_contacts`
 - پرداخت‌ها:

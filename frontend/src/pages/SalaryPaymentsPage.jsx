@@ -15,6 +15,10 @@ const STATUS_TABS = [
   { value: 'پرداخت شده', label: 'پرداخت شده' },
 ];
 
+const AWAITING_PAYMENT = 'در انتظار پرداخت';
+const IN_PROGRESS = 'در جریان پرداخت';
+const SELECTABLE_STATUSES = [AWAITING_PAYMENT, IN_PROGRESS];
+
 const MONTHLY_WORK = 'کارکرد ماهانه';
 
 const emptyForm = () => ({
@@ -25,7 +29,7 @@ const emptyForm = () => ({
   executor_id: '',
   project_id: '',
   permission_serial_id: '',
-  status: 'ثبت نشده',
+  status: AWAITING_PAYMENT,
 });
 
 function buildPreview({ categoryName, month, executorName, serialNumber, projectName }) {
@@ -36,7 +40,7 @@ function buildPreview({ categoryName, month, executorName, serialNumber, project
 }
 
 function SalaryPaymentsPage() {
-  const [activeStatus, setActiveStatus] = useState(STATUS_TABS[0].value);
+  const [activeStatus, setActiveStatus] = useState(AWAITING_PAYMENT);
   const [payments, setPayments] = useState([]);
   const [personnel, setPersonnel] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -49,6 +53,8 @@ function SalaryPaymentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [moving, setMoving] = useState(false);
   const searchRef = useRef(null);
 
   const fetchLookups = async () => {
@@ -74,7 +80,10 @@ function SalaryPaymentsPage() {
   };
 
   useEffect(() => { fetchLookups(); }, []);
-  useEffect(() => { fetchPayments(); }, [activeStatus]);
+  useEffect(() => {
+    fetchPayments();
+    setSelectedIds([]);
+  }, [activeStatus]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -112,6 +121,29 @@ function SalaryPaymentsPage() {
     return text.includes(searchTerm.toLowerCase());
   });
 
+  const canSelect = SELECTABLE_STATUSES.includes(activeStatus);
+  const selectedPayments = payments.filter((p) => selectedIds.includes(p.id));
+  const selectedTotal = selectedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  const toggleSelected = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const moveSelected = async (status) => {
+    if (!isAdmin() || selectedIds.length === 0) return;
+    setMoving(true);
+    try {
+      const res = await api.post('/salary-payments/bulk-status', { ids: selectedIds, status });
+      alert(res.data.message);
+      setSelectedIds([]);
+      fetchPayments();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message);
+    } finally {
+      setMoving(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
     setLoading(true);
@@ -142,7 +174,27 @@ function SalaryPaymentsPage() {
 
   const set = (key) => (e) => setFormData({ ...formData, [key]: e.target.value });
 
-  const columns = [
+  const columns = [];
+
+  if (canSelect) {
+    columns.push({
+      key: 'select',
+      header: '',
+      className: 'w-12 text-center',
+      render: (p) => (
+        <input
+          type="checkbox"
+          className="salary-select-dot"
+          checked={selectedIds.includes(p.id)}
+          onChange={() => toggleSelected(p.id)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="انتخاب پرداخت"
+        />
+      ),
+    });
+  }
+
+  columns.push(
     { key: 'personnel_code', header: 'پرسنلی' },
     { key: 'name', header: 'نام', render: (p) => `${p.first_name} ${p.last_name}` },
     { key: 'amount', header: 'مبلغ', render: (p) => <span className="ui-amount">{formatAmount(p.amount)}</span> },
@@ -153,14 +205,14 @@ function SalaryPaymentsPage() {
       header: 'توضیحات',
       render: (p) => <span className="max-w-xs truncate inline-block" title={p.description}>{p.description}</span>,
     },
-  ];
+  );
 
   if (canEditCommercialPayment()) {
     columns.push({
       key: 'actions',
       header: 'عملیات',
       render: (p) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           {p.status !== 'پرداخت شده' && (
             <Button variant="ghost" onClick={() => {
               setEditingId(p.id);
@@ -193,10 +245,10 @@ function SalaryPaymentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${selectedIds.length > 0 ? 'pb-28' : ''}`}>
       <PageHeader
         title="پرداخت حقوق"
-        description="جابجایی فیلدها با Enter · جستجو با Ctrl+K · ورود گروهی با اکسل"
+        description="رکورد جدید در انتظار پرداخت ثبت می‌شود · انتخاب ردیف‌ها جمع مبلغ را نشان می‌دهد"
         actions={(
           <div className="flex flex-wrap gap-2 items-center">
             <PaymentExcelExport
@@ -284,7 +336,36 @@ function SalaryPaymentsPage() {
         </Card>
       )}
 
-      <DataTable columns={columns} rows={filtered} emptyText="پرداختی یافت نشد" />
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        emptyText="پرداختی یافت نشد"
+        getRowStyle={(p) => (selectedIds.includes(p.id) ? { background: 'var(--primary-soft)' } : undefined)}
+        onRowClick={canSelect ? (p) => toggleSelected(p.id) : undefined}
+      />
+
+      {selectedIds.length > 0 && (
+        <div className="salary-float-bar" role="status">
+          <div className="salary-float-bar-meta">
+            <span>{selectedIds.length} مورد انتخاب شده</span>
+            <strong className="ui-amount">{formatAmount(selectedTotal)}</strong>
+            <span className="ui-muted">ریال</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {isAdmin() && activeStatus === AWAITING_PAYMENT && (
+              <Button disabled={moving} onClick={() => moveSelected(IN_PROGRESS)}>
+                انتقال به در جریان پرداخت
+              </Button>
+            )}
+            {isAdmin() && activeStatus === IN_PROGRESS && (
+              <Button disabled={moving} onClick={() => moveSelected(AWAITING_PAYMENT)}>
+                بازگشت به در انتظار پرداخت
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setSelectedIds([])}>لغو انتخاب</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -340,6 +340,7 @@ async function createPersonnelContactsTable() {
       table.string('national_id').nullable().unique();
       table.string('first_name').notNullable();
       table.string('last_name').notNullable();
+      table.string('father_name').nullable();
       table.string('sheba').notNullable();
       table.boolean('sheba_needs_review').notNullable().defaultTo(false);
       table.string('account_holder_name').notNullable();
@@ -355,6 +356,7 @@ async function createPersonnelContactsTable() {
 
   await migratePersonnelNationalIdColumn();
   await migratePersonnelShebaReviewColumn();
+  await migratePersonnelFatherNameColumn();
 }
 
 async function migratePersonnelNationalIdColumn() {
@@ -364,6 +366,16 @@ async function migratePersonnelNationalIdColumn() {
       table.string('national_id').nullable().unique();
     });
     console.log("ℹ️ ستون national_id به personnel_contacts اضافه شد.");
+  }
+}
+
+async function migratePersonnelFatherNameColumn() {
+  const hasFatherName = await db.schema.hasColumn('personnel_contacts', 'father_name');
+  if (!hasFatherName) {
+    await db.schema.alterTable('personnel_contacts', (table) => {
+      table.string('father_name').nullable();
+    });
+    console.log("ℹ️ ستون father_name به personnel_contacts اضافه شد.");
   }
 }
 
@@ -395,7 +407,7 @@ async function createSalaryPaymentCategoriesTable() {
 async function createSalaryPaymentsTable() {
   const exists = await db.schema.hasTable('salary_payments');
   if (!exists) {
-    const { PAYMENT_STATUSES } = require('./constants/salaryPayments');
+    const { DEFAULT_STATUS } = require('./constants/salaryPayments');
     await db.schema.createTable('salary_payments', (table) => {
       table.increments('id').primary();
       table.integer('personnel_contact_id').unsigned().notNullable()
@@ -411,7 +423,7 @@ async function createSalaryPaymentsTable() {
       table.integer('permission_serial_id').unsigned().notNullable().unique()
         .references('id').inTable('payment_permission_serials');
       table.text('description');
-      table.string('status').notNullable().defaultTo(PAYMENT_STATUSES[0]);
+      table.string('status').notNullable().defaultTo(DEFAULT_STATUS);
       table.integer('recorded_by_user_id').unsigned().nullable()
         .references('id').inTable('users');
       table.string('receipt_file_path').nullable();

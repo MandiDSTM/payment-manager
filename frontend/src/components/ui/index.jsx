@@ -127,7 +127,14 @@ export function StatusTabs({ tabs, value, onChange }) {
   );
 }
 
-export function DataTable({ columns, rows, emptyText = 'موردی یافت نشد', rowKey = 'id' }) {
+export function DataTable({
+  columns,
+  rows,
+  emptyText = 'موردی یافت نشد',
+  rowKey = 'id',
+  getRowStyle,
+  onRowClick,
+}) {
   return (
     <div className="ui-table-wrap">
       <table className="ui-table">
@@ -147,7 +154,12 @@ export function DataTable({ columns, rows, emptyText = 'موردی یافت نش
             </tr>
           ) : (
             rows.map((row, idx) => (
-              <tr key={row[rowKey] ?? idx}>
+              <tr
+                key={row[rowKey] ?? idx}
+                style={getRowStyle?.(row)}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={onRowClick ? 'cursor-pointer' : undefined}
+              >
                 {columns.map((col) => (
                   <td key={col.key || col.header} className={col.className || ''}>
                     {col.render ? col.render(row, idx) : row[col.key]}

@@ -337,3 +337,51 @@ body {
   border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--primary);
 }
+
+.salary-select-dot {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 2px solid var(--primary);
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.salary-select-dot:checked {
+  background: var(--primary);
+  box-shadow: inset 0 0 0 3px var(--surface);
+}
+
+.salary-select-dot:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.salary-float-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+  min-width: min(92vw, 40rem);
+}
+
+.salary-float-bar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: 700;
+}

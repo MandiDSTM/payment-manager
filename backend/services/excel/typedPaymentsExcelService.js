@@ -5,7 +5,7 @@ const {
     PAYMENT_STATUSES: MACHINERY_STATUSES,
     PERSIAN_MONTHS,
 } = require('../../constants/machineryPayments');
-const { PAYMENT_STATUSES: SALARY_STATUSES } = require('../../constants/salaryPayments');
+const { PAYMENT_STATUSES: SALARY_STATUSES, DEFAULT_STATUS: SALARY_DEFAULT_STATUS } = require('../../constants/salaryPayments');
 const { consumeSerial, isSelectable } = require('../serialService');
 const commercialPaymentService = require('../commercialPaymentService');
 const machineryPaymentService = require('../machineryPaymentService');
@@ -543,7 +543,7 @@ const salaryConfig = {
     contactLookupFields: ['personnel_code', 'national_id'],
     usageLocation: USAGE_LOCATIONS.PERSONNEL,
     statuses: SALARY_STATUSES,
-    defaultStatus: SALARY_STATUSES[0],
+    defaultStatus: SALARY_DEFAULT_STATUS,
     hasMonth: true,
     hasAccountingFlag: true,
     loadContacts: () => db('personnel_contacts').select('*'),

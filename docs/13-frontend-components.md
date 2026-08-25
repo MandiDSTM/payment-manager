@@ -21,7 +21,7 @@
 - `TextInput`, `SelectField`
 - `SearchInput`
 - `StatusTabs`
-- `DataTable`
+- `DataTable` (اختیاری: `getRowStyle`, `onRowClick`)
 - `Alert`
 
 این‌ها برای ساخت سریع فرم/جدول در همه Pageها استفاده شده‌اند.

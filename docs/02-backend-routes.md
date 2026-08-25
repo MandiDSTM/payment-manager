@@ -100,6 +100,7 @@
 - `GET /api/salary-payments`
 - `GET /api/salary-payments/:id`
 - `POST /api/salary-payments` (admin/accountant)
+- `POST /api/salary-payments/bulk-status` (admin) — انتقال بین «در انتظار پرداخت» و «در جریان پرداخت»
 - `PUT /api/salary-payments/:id` (admin/accountant)
 - `DELETE /api/salary-payments/:id` (admin)
 - `POST /api/salary-payments/:id/receipt`

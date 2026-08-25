@@ -118,6 +118,7 @@ function PersonnelImportModal({
                   <th style={{ width: 48 }}>انتخاب</th>
                   <th>سطر</th>
                   <th>نام</th>
+                  <th>نام پدر</th>
                   <th>کد ملی</th>
                   <th>کد پرسنلی</th>
                   <th>شبا</th>
@@ -127,7 +128,7 @@ function PersonnelImportModal({
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7}><div className="ui-empty">ردیفی یافت نشد</div></td>
+                    <td colSpan={8}><div className="ui-empty">ردیفی یافت نشد</div></td>
                   </tr>
                 ) : (
                   rows.map((item) => {
@@ -149,7 +150,8 @@ function PersonnelImportModal({
                         </td>
                         <td>{item.row}</td>
                         <td>{item.full_name || `${item.data?.first_name || ''} ${item.data?.last_name || ''}`}</td>
-                        <td className="font-mono text-xs">{item.data?.national_id}</td>
+                        <td>{item.data?.father_name || '—'}</td>
+                        <td className="font-mono text-xs">{item.data?.national_id || '—'}</td>
                         <td className="font-mono text-xs">
                           {item.data?.personnel_code}
                           {item.code_generated ? <span className="ui-muted"> (خودکار)</span> : null}

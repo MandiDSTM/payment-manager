@@ -102,12 +102,14 @@
 ## پرداخت‌های حقوق
 ### `backend/controllers/salaryPaymentsController.js`
 - مشابه ماشین‌آلات/تجاری، با منطق و جدول `salary_payments`
+- وضعیت پیش‌فرض ثبت: `'در انتظار پرداخت'`
+- `bulkUpdateStatus` (admin): فقط انتقال گروهی بین `'در انتظار پرداخت'` و `'در جریان پرداخت'`
 - آپلود رسید: ذخیره در `receipt_file_path`
 
 ---
 
 ## `backend/controllers/personnelContactsController.js`
-- CRUD پرسنل (`personnel_code` و `national_id` یکتا)
+- CRUD پرسنل (`personnel_code` یکتا؛ `national_id` اختیاری و در صورت پر بودن یکتا؛ فیلد `father_name`)
 - حذف پرسنل اگر به `salary_payments` لینک باشد ممنوع است
 
 ---

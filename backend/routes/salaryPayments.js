@@ -11,6 +11,7 @@ const {
     create,
     update,
     remove,
+    bulkUpdateStatus,
     uploadReceipt: uploadReceiptHandler,
 } = require('../controllers/salaryPaymentsController');
 
@@ -19,6 +20,7 @@ const router = express.Router();
 router.get('/salary-payments', requireReadAccess, getAll);
 router.get('/salary-payments/:id', requireReadAccess, getById);
 router.post('/salary-payments', requireCommercialPaymentWrite, create);
+router.post('/salary-payments/bulk-status', requireAdmin, bulkUpdateStatus);
 router.put('/salary-payments/:id', requireCommercialPaymentWrite, update);
 router.delete('/salary-payments/:id', requireAdmin, remove);
 router.post(

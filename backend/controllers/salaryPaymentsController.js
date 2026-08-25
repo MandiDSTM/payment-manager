@@ -1,5 +1,11 @@
 const db = require('../config/db-config');
-const { PAYMENT_STATUSES, PERSIAN_MONTHS } = require('../constants/salaryPayments');
+const {
+    PAYMENT_STATUSES,
+    PERSIAN_MONTHS,
+    DEFAULT_STATUS,
+    STATUS,
+    WORKFLOW_STATUSES,
+} = require('../constants/salaryPayments');
 const { USAGE_LOCATIONS } = require('../constants/permissionSerials');
 const { consumeSerial, releaseSerial } = require('../services/serialService');
 const {
@@ -39,7 +45,7 @@ const normalizePayload = (body) => ({
     executor_id: body.executor_id ? Number(body.executor_id) : null,
     project_id: body.project_id ? Number(body.project_id) : null,
     permission_serial_id: body.permission_serial_id ? Number(body.permission_serial_id) : null,
-    status: body.status || PAYMENT_STATUSES[0],
+    status: body.status || DEFAULT_STATUS,
 });
 
 const validatePayload = (payload) => {
@@ -204,6 +210,48 @@ const remove = async (req, res) => {
     }
 };
 
+const bulkUpdateStatus = async (req, res) => {
+    try {
+        const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+        const ids = [...new Set(rawIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+        const status = req.body?.status;
+
+        if (ids.length === 0) {
+            return res.status(400).json({ message: 'هیچ رکوردی انتخاب نشده است' });
+        }
+        if (!WORKFLOW_STATUSES.includes(status)) {
+            return res.status(400).json({ message: 'وضعیت مقصد نامعتبر است' });
+        }
+
+        const rows = await db('salary_payments').whereIn('id', ids);
+        if (rows.length !== ids.length) {
+            return res.status(404).json({ message: 'یک یا چند پرداخت یافت نشد' });
+        }
+
+        const requiredCurrent = status === STATUS.IN_PROGRESS
+            ? STATUS.AWAITING_PAYMENT
+            : STATUS.IN_PROGRESS;
+        const invalid = rows.filter((row) => row.status !== requiredCurrent);
+        if (invalid.length > 0) {
+            return res.status(409).json({
+                message: `فقط پرداخت‌های «${requiredCurrent}» قابل انتقال به «${status}» هستند`,
+            });
+        }
+
+        await db('salary_payments').whereIn('id', ids).update({
+            status,
+            updated_at: db.fn.now(),
+        });
+
+        res.json({
+            message: `${ids.length} پرداخت به «${status}» منتقل شد`,
+            count: ids.length,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'خطا در تغییر وضعیت', error: error.message });
+    }
+};
+
 const uploadReceipt = async (req, res) => {
     try {
         const { id } = req.params;
@@ -224,4 +272,4 @@ const uploadReceipt = async (req, res) => {
     }
 };
 
-module.exports = { getAll, getById, create, update, remove, uploadReceipt };
+module.exports = { getAll, getById, create, update, remove, bulkUpdateStatus, uploadReceipt };

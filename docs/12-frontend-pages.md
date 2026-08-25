@@ -128,9 +128,13 @@ Lookups:
 پرداخت‌ها:
 - `GET /api/salary-payments?status=...`
 - ایجاد/ویرایش/حذف:
-  - `POST /api/salary-payments`
+  - `POST /api/salary-payments` (وضعیت پیش‌فرض: در انتظار پرداخت)
   - `PUT /api/salary-payments/:id`
   - `DELETE /api/salary-payments/:id`
+- انتخاب چندتایی در تب‌های «در انتظار پرداخت» و «در جریان پرداخت»: جمع مبلغ در نوار شناور
+- انتقال وضعیت (فقط admin):
+  - `POST /api/salary-payments/bulk-status` با `{ ids, status }`
+  - از در انتظار پرداخت → در جریان پرداخت و برعکس
 - ورود اکسل (admin/accountant):
   - فایل حداقل باید `کد پرسنلی` و `مبلغ` داشته باشد
   - اگر دسته/ماه/مجری/پروژه/سریال خالی باشد: ویزارد مرحله‌به‌مرحله (`SalaryImportDefaultsWizard`) مقدار را می‌گیرد و روی همه ردیف‌ها اعمال می‌کند
@@ -149,6 +153,7 @@ Lookups:
   - `PUT /api/personnel-contacts/:id`
   - `DELETE /api/personnel-contacts/:id`
   - ورود اکسل از همین صفحه: پیش‌نمایش + تأیید (`/excel/preview/personnel` و `/excel/confirm/personnel`)
+  - `national_id` اختیاری است؛ فیلد فرم «نام پدر» در ستون `father_name` ذخیره می‌شود
 
 ---
 

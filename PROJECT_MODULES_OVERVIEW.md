@@ -27,7 +27,7 @@
 - `users` (کاربران/نقش‌ها، شامل `is_blocked`)
 - مخاطبین:
   - `business_contacts`
-  - `personnel_contacts`
+  - `personnel_contacts` (`national_id` اختیاری، `father_name`)
   - `machines`
   - `machinery_contacts`
 - پرداخت‌ها (هرکدام یک نوع پرداخت جدا):
@@ -157,6 +157,7 @@
 - `GET /api/salary-payments` -> `salaryPaymentsController.getAll` (read)
 - `GET /api/salary-payments/:id` -> `salaryPaymentsController.getById` (read)
 - `POST /api/salary-payments` -> `salaryPaymentsController.create` (admin/accountant)
+- `POST /api/salary-payments/bulk-status` -> `salaryPaymentsController.bulkUpdateStatus` (admin)
 - `PUT /api/salary-payments/:id` -> `salaryPaymentsController.update` (admin/accountant)
 - `DELETE /api/salary-payments/:id` -> `salaryPaymentsController.remove` (admin)
 - `POST /api/salary-payments/:id/receipt` -> `salaryPaymentsController.uploadReceipt`
@@ -288,7 +289,7 @@
 - منطق کلیدی مشابه ماشین‌آلات است.
 
 #### `backend/controllers/personnelContactsController.js`
-- CRUD پرسنل
+- CRUD پرسنل (`national_id` اختیاری؛ `father_name`)
 - حذف پرسنل وقتی به `salary_payments` لینک باشد ممنوع است.
 
 #### `backend/controllers/permissionSerialsController.js`
@@ -534,6 +535,8 @@
   - آپلود رسید: `/salary-payments/:id/receipt`
   - ورود اکسل: فایل فقط کد پرسنلی و مبلغ لازم دارد؛ بقیه فیلدها مرحله‌به‌مرحله پرسیده و روی کل فایل اعمال می‌شود (`/excel/preview/salary-payments` + `/excel/confirm/salary-payments`)
   - خروجی اکسل: `/excel/export/payments/salary`
+  - انتخاب چندتایی + جمع مبلغ شناور در تب‌های در انتظار / در جریان پرداخت
+  - انتقال گروهی وضعیت (admin): `POST /salary-payments/bulk-status`
 
 #### `frontend/src/pages/PersonnelContactsPage.jsx`
 - CRUD پرسنل:
@@ -541,6 +544,7 @@
   - POST `/personnel-contacts`
   - PUT `/personnel-contacts/:id`
   - DELETE `/personnel-contacts/:id`
+  - `national_id` اختیاری است؛ نام پدر در `father_name` ذخیره می‌شود
 
 #### `frontend/src/pages/PermissionSerialsPage.jsx`
 - مدیریت سریال/مجوز پرداخت:

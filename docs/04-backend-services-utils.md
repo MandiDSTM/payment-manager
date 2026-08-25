@@ -47,9 +47,9 @@
 - `backend/services/excelService.js`
   - parse اکسل برای `payments` عمومی/legacy (تشخیص ستون‌ها و ساخت رکورد) — مسیر قدیمی `/upload-excel`
 - `backend/services/excel/personnelExcelService.js`
-  - پشتیبانی از فایل‌های HR با هدر دو ردیفه و ستون‌های «نام و نام خانوادگی پرسنل»، «کد ملی»، «کد پرسنلی»
+  - پشتیبانی از فایل‌های HR با هدر دو ردیفه و ستون‌های «نام و نام خانوادگی پرسنل»، «کد ملی» (اختیاری)، «نام پدر»، «کد پرسنلی»
   - `parsePreview` + `confirmImport` (مودال انتخاب قبل از ثبت)
-  - یکتایی `personnel_code` و `national_id` (داخل فایل و دیتابیس)
+  - یکتایی `personnel_code` و در صورت پر بودن `national_id` (داخل فایل و دیتابیس)
 - `backend/services/excel/generalPaymentsExcelService.js`
   - ورود پرداخت‌های عمومی با `parsePreview` + `confirmImport`
   - هشدار شبا نامعتبر؛ مبلغ و تاریخ اجباری

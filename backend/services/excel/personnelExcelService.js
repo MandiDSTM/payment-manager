@@ -15,6 +15,7 @@ const COLUMN_MAP = {
     'نام کامل': ['نام و نام خانوادگی پرسنل', 'نام و نام خانوادگی', 'نام کامل', 'نام پرسنل'],
     'نام': ['نام'],
     'نام خانوادگی': ['نام خانوادگی', 'خانوادگی'],
+    'نام پدر': ['نام پدر', 'نامپدر', 'father name', 'father_name', 'fathername'],
     'شماره شبا': ['شبا', 'شماره شبا', 'شمارهشبا', 'sheba', 'iban'],
     'نام صاحب حساب': ['نام صاحب حساب', 'صاحب حساب', 'نامصاحب حساب'],
     'موبایل': ['شماره تماس', 'موبایل', 'تلفن همراه', 'mobile', 'phone'],
@@ -60,6 +61,7 @@ const identifyColumns = (headers) => {
         fullName,
         firstName: firstName === fullName ? -1 : firstName,
         lastName: lastName === fullName ? -1 : lastName,
+        fatherName: findColumnIndex(headers, COLUMN_MAP['نام پدر'], { exact: true }),
         sheba: findColumnIndex(headers, COLUMN_MAP['شماره شبا']),
         accountHolder: findColumnIndex(headers, COLUMN_MAP['نام صاحب حساب']),
         mobile: findColumnIndex(headers, COLUMN_MAP['موبایل']),
@@ -89,6 +91,7 @@ const normalizeRow = (row, colIdx) => {
         national_id: normalizeNationalId(getCellValue(row, colIdx.nationalId)),
         first_name: firstName,
         last_name: lastName,
+        father_name: normalizeText(String(getCellValue(row, colIdx.fatherName) ?? '')) || null,
         sheba: normalizeSheba(String(getCellValue(row, colIdx.sheba) ?? '')),
         account_holder_name: accountHolder,
         mobile: normalizeText(String(getCellValue(row, colIdx.mobile) ?? '')) || null,
@@ -102,21 +105,23 @@ const assessRow = (contact) => {
     const errors = [];
     const warnings = [];
 
-    if (!contact.national_id) errors.push('کد ملی خالی است / ستون کد ملی خوانده نشد');
-    else if (!isValidNationalId(contact.national_id)) errors.push('کد ملی معتبر نیست (باید ۱۰ رقم باشد)');
+    if (contact.national_id && !isValidNationalId(contact.national_id)) {
+        errors.push('کد ملی معتبر نیست (باید ۱۰ رقم باشد)');
+    }
 
     if (!contact.first_name || !contact.last_name) errors.push('نام یا نام خانوادگی خالی است');
     if (!contact.account_holder_name) errors.push('نام صاحب حساب خالی است');
 
-    const shebaOk = isValidSheba(contact.sheba);
-    if (!shebaOk) {
+    if (!contact.sheba) {
+        errors.push('شماره شبا خالی است');
+    } else if (!isValidSheba(contact.sheba)) {
         warnings.push('شماره شبا نامعتبر است — ثبت می‌شود ولی نیاز به اصلاح دارد');
     }
 
     return {
         errors,
         warnings,
-        sheba_needs_review: !shebaOk,
+        sheba_needs_review: !isValidSheba(contact.sheba),
         code_generated: false,
     };
 };
@@ -198,7 +203,7 @@ const attachDbUniquenessErrors = async (rows) => {
 };
 
 const parseWorkbook = (filePath, {
-    requireNationalId = true,
+    requireNationalId = false,
     requireSheba = true,
     requireName = true,
     softMissingColumns = false,
@@ -256,11 +261,6 @@ const parsePreview = async (filePath) => {
         const excelRow = headerRowNumber + i + 1;
         const contact = normalizeRow(row, colIdx);
         const assessment = assessRow(contact);
-
-        if (colIdx.nationalId === -1) {
-            const msg = 'ستون کد ملی در فایل یافت نشد';
-            if (!assessment.errors.includes(msg)) assessment.errors.push(msg);
-        }
 
         rows.push({
             row: excelRow,
@@ -339,19 +339,21 @@ const collectUniquenessErrors = async (records) => {
             codeMap.set(contact.personnel_code, row);
         }
 
-        if (nationalIdMap.has(contact.national_id)) {
-            errors.push({
-                row,
-                message: `کد ملی ${contact.national_id} در انتخاب‌ها تکراری است`,
-                field: 'national_id',
-            });
-            errors.push({
-                row: nationalIdMap.get(contact.national_id),
-                message: `کد ملی ${contact.national_id} در انتخاب‌ها تکراری است`,
-                field: 'national_id',
-            });
-        } else {
-            nationalIdMap.set(contact.national_id, row);
+        if (contact.national_id) {
+            if (nationalIdMap.has(contact.national_id)) {
+                errors.push({
+                    row,
+                    message: `کد ملی ${contact.national_id} در انتخاب‌ها تکراری است`,
+                    field: 'national_id',
+                });
+                errors.push({
+                    row: nationalIdMap.get(contact.national_id),
+                    message: `کد ملی ${contact.national_id} در انتخاب‌ها تکراری است`,
+                    field: 'national_id',
+                });
+            } else {
+                nationalIdMap.set(contact.national_id, row);
+            }
         }
     });
 
@@ -360,7 +362,7 @@ const collectUniquenessErrors = async (records) => {
         .filter((item) => hardValidateContact(item.data).length === 0);
 
     const codes = [...new Set(validContacts.map((r) => r.data.personnel_code))];
-    const nationalIds = [...new Set(validContacts.map((r) => r.data.national_id))];
+    const nationalIds = [...new Set(validContacts.map((r) => r.data.national_id).filter(Boolean))];
 
     const existingByCode = codes.length > 0
         ? await db('personnel_contacts').whereIn('personnel_code', codes).select('personnel_code')
@@ -380,7 +382,7 @@ const collectUniquenessErrors = async (records) => {
                 field: 'personnel_code',
             });
         }
-        if (nationalIdSet.has(item.data.national_id)) {
+        if (item.data.national_id && nationalIdSet.has(item.data.national_id)) {
             errors.push({
                 row: item.row,
                 message: `کد ملی ${item.data.national_id} قبلاً در دیتابیس ثبت شده`,
@@ -448,9 +450,10 @@ const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
         const contact = item.data;
         return {
             personnel_code: contact.personnel_code,
-            national_id: contact.national_id,
+            national_id: contact.national_id || null,
             first_name: contact.first_name,
             last_name: contact.last_name,
+            father_name: contact.father_name || null,
             sheba: contact.sheba || '',
             sheba_needs_review: !!contact.sheba_needs_review,
             account_holder_name: contact.account_holder_name,
@@ -506,9 +509,10 @@ const parseBulkUpdate = async (filePath) => {
         const normalized = normalizeRow(row, colIdx);
         const patch = { personnel_code: personnelCode };
 
-        if (colIdx.nationalId !== -1) patch.national_id = normalized.national_id;
+        if (colIdx.nationalId !== -1) patch.national_id = normalized.national_id || null;
         if (colIdx.fullName !== -1 || colIdx.firstName !== -1) patch.first_name = normalized.first_name;
         if (colIdx.fullName !== -1 || colIdx.lastName !== -1) patch.last_name = normalized.last_name;
+        if (colIdx.fatherName !== -1) patch.father_name = normalized.father_name;
         if (colIdx.sheba !== -1) {
             patch.sheba = normalized.sheba;
             patch.sheba_needs_review = !isValidSheba(normalized.sheba);
@@ -528,11 +532,11 @@ const parseBulkUpdate = async (filePath) => {
             errors.push({ row: rowNum, message: 'نام صاحب حساب خالی است' });
             continue;
         }
-        if (colIdx.nationalId !== -1) {
-            if (!merged.national_id) {
-                errors.push({ row: rowNum, message: 'کد ملی خالی است' });
-                continue;
-            }
+        if (!merged.sheba) {
+            errors.push({ row: rowNum, message: 'شماره شبا خالی است' });
+            continue;
+        }
+        if (colIdx.nationalId !== -1 && merged.national_id) {
             if (!isValidNationalId(merged.national_id)) {
                 errors.push({ row: rowNum, message: 'کد ملی معتبر نیست (باید ۱۰ رقم باشد)' });
                 continue;
@@ -557,6 +561,7 @@ const getTemplateBuffer = () => buildWorkbookBuffer('پرسنل', [{
     'کد پرسنلی': 'P-001',
     'کد ملی': '0012345678',
     'نام و نام خانوادگی پرسنل': 'علی رضایی',
+    'نام پدر': 'حسن',
     'شماره شبا': 'IR123456789012345678901234',
     'نام صاحب حساب': 'علی رضایی',
     'شماره تماس': '09121234567',
@@ -574,6 +579,7 @@ const PERSONNEL_EXPORT_COLUMNS = [
     'کد ملی',
     'نام',
     'نام خانوادگی',
+    'نام پدر',
     'نام کامل',
     'شماره شبا',
     'وضعیت شبا',
@@ -611,6 +617,7 @@ const exportPersonnelList = async () => {
         'کد ملی': c.national_id || '',
         'نام': c.first_name || '',
         'نام خانوادگی': c.last_name || '',
+        'نام پدر': c.father_name || '',
         'نام کامل': `${c.first_name || ''} ${c.last_name || ''}`.trim(),
         'شماره شبا': c.sheba || '',
         'وضعیت شبا': c.sheba_needs_review ? 'نیاز به اصلاح' : 'معتبر',

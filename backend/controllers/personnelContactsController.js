@@ -2,7 +2,7 @@ const db = require('../config/db-config');
 const normalizeText = require('../utils/normalizeText');
 const { normalizeSheba, isValidSheba } = require('../utils/validateSheba');
 
-const REQUIRED_FIELDS = ['national_id', 'first_name', 'last_name', 'account_holder_name'];
+const REQUIRED_FIELDS = ['first_name', 'last_name', 'sheba', 'account_holder_name'];
 
 const isValidNationalId = (value) => /^\d{10}$/.test(String(value || ''));
 
@@ -25,9 +25,10 @@ const normalizeContact = (body) => {
     const sheba = normalizeSheba(body.sheba || '');
     return {
         personnel_code: normalizeText(body.personnel_code || ''),
-        national_id: normalizeText(body.national_id || ''),
+        national_id: normalizeText(body.national_id || '') || null,
         first_name: normalizeText(body.first_name || ''),
         last_name: normalizeText(body.last_name || ''),
+        father_name: normalizeText(body.father_name || '') || null,
         sheba: sheba || '',
         sheba_needs_review: body.sheba_needs_review === true || body.sheba_needs_review === 1
             ? true
@@ -44,7 +45,7 @@ const validateContact = (contact) => {
     if (missing.length > 0) {
         return `فیلدهای اجباری خالی هستند: ${missing.join(', ')}`;
     }
-    if (!isValidNationalId(contact.national_id)) {
+    if (contact.national_id && !isValidNationalId(contact.national_id)) {
         return 'کد ملی معتبر نیست (باید ۱۰ رقم باشد)';
     }
     return null;
@@ -77,8 +78,10 @@ const create = async (req, res) => {
 
         contact.personnel_code = await allocatePersonnelCode(contact.personnel_code);
 
-        const existingNationalId = await db('personnel_contacts').where({ national_id: contact.national_id }).first();
-        if (existingNationalId) return res.status(409).json({ message: 'کد ملی تکراری است' });
+        if (contact.national_id) {
+            const existingNationalId = await db('personnel_contacts').where({ national_id: contact.national_id }).first();
+            if (existingNationalId) return res.status(409).json({ message: 'کد ملی تکراری است' });
+        }
 
         const [id] = await db('personnel_contacts').insert(contact);
         res.status(201).json({ message: 'پرسنل با موفقیت ثبت شد', id, personnel_code: contact.personnel_code });
@@ -108,11 +111,13 @@ const update = async (req, res) => {
             .first();
         if (duplicateCode) return res.status(409).json({ message: 'شماره پرسنلی تکراری است' });
 
-        const duplicateNationalId = await db('personnel_contacts')
-            .where({ national_id: contact.national_id })
-            .whereNot({ id })
-            .first();
-        if (duplicateNationalId) return res.status(409).json({ message: 'کد ملی تکراری است' });
+        if (contact.national_id) {
+            const duplicateNationalId = await db('personnel_contacts')
+                .where({ national_id: contact.national_id })
+                .whereNot({ id })
+                .first();
+            if (duplicateNationalId) return res.status(409).json({ message: 'کد ملی تکراری است' });
+        }
 
         // Clear review flag automatically when sheba becomes valid
         if (isValidSheba(contact.sheba)) contact.sheba_needs_review = false;

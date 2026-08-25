@@ -8,10 +8,11 @@ import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
 
 const FIELDS = [
   { name: 'personnel_code', label: 'شماره پرسنلی (خالی = خودکار)', required: false },
-  { name: 'national_id', label: 'کد ملی', required: true },
+  { name: 'national_id', label: 'کد ملی', required: false },
   { name: 'first_name', label: 'نام', required: true },
   { name: 'last_name', label: 'نام خانوادگی', required: true },
-  { name: 'sheba', label: 'شماره شبا', required: false },
+  { name: 'father_name', label: 'نام پدر', required: false },
+  { name: 'sheba', label: 'شماره شبا', required: true },
   { name: 'account_holder_name', label: 'نام صاحب حساب', required: true },
   { name: 'mobile', label: 'موبایل', required: false },
   { name: 'city', label: 'شهر', required: false },
@@ -58,7 +59,7 @@ function PersonnelContactsPage() {
   }, []);
 
   const filtered = contacts.filter((c) =>
-    [c.personnel_code, c.national_id, c.first_name, c.last_name, c.sheba].join(' ').toLowerCase().includes(searchTerm.toLowerCase()),
+    [c.personnel_code, c.national_id, c.first_name, c.last_name, c.father_name, c.sheba].join(' ').toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleExport = async () => {
@@ -103,6 +104,7 @@ function PersonnelContactsPage() {
     { key: 'personnel_code', header: 'پرسنلی' },
     { key: 'national_id', header: 'کد ملی', render: (c) => c.national_id || '—' },
     { key: 'name', header: 'نام', render: (c) => `${c.first_name} ${c.last_name}` },
+    { key: 'father_name', header: 'نام پدر', render: (c) => c.father_name || '—' },
     {
       key: 'sheba',
       header: 'شبا',
@@ -170,7 +172,7 @@ function PersonnelContactsPage() {
         />
         {isAdmin() && (
           <p className="text-xs ui-muted mt-2">
-            ستون‌های اکسل: کد پرسنلی، کد ملی، نام و نام خانوادگی پرسنل، شبا، نام صاحب حساب، شماره تماس، محل تولد
+            ستون‌های اکسل: کد پرسنلی، کد ملی (اختیاری)، نام و نام خانوادگی پرسنل، نام پدر، شبا (الزامی)، نام صاحب حساب، شماره تماس، محل تولد
           </p>
         )}
       </PageHeader>
@@ -187,6 +189,7 @@ function PersonnelContactsPage() {
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 value={formData[field.name]}
                 onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                required={field.required}
               />
             ))}
             <div className="md:col-span-3 flex gap-3">
