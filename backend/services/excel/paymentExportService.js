@@ -300,6 +300,67 @@ const exportSalaryPayments = async () => {
     });
 };
 
+const PAYSTAR_COLUMNS = [
+    'شبا',
+    'نام و نام خانوادگی',
+    'مبلغ',
+    'توضیحات (اختیاری)',
+    'بابت (اختیاری)',
+];
+
+const exportSalaryPaystar = async ({ ids, status } = {}) => {
+    let query = db('salary_payments as p')
+        .leftJoin('personnel_contacts as c', 'p.personnel_contact_id', 'c.id')
+        .leftJoin('salary_payment_categories as cat', 'p.category_id', 'cat.id')
+        .leftJoin('projects as pr', 'p.project_id', 'pr.id')
+        .select(
+            'p.id',
+            'p.amount',
+            'p.description',
+            'c.first_name',
+            'c.last_name',
+            'c.sheba',
+            'cat.name as category_name',
+            'pr.name as project_name',
+        )
+        .orderBy('p.id', 'asc');
+
+    if (Array.isArray(ids)) {
+        if (ids.length === 0) {
+            return buildWorkbookBuffer('پی‌استار', [], {
+                showMeta: false,
+                columns: PAYSTAR_COLUMNS,
+                textColumns: ['شبا'],
+            });
+        }
+        query = query.whereIn('p.id', ids);
+    } else if (status) {
+        query = query.where('p.status', status);
+    }
+
+    const rows = await query;
+    const mapped = rows.map((p) => {
+        const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+        const category = p.category_name || '';
+        const project = p.project_name || '';
+        const reason = [category, project].filter(Boolean).join(' ');
+        const babat = [reason, fullName].filter(Boolean).join('_');
+        return {
+            'شبا': p.sheba || '',
+            'نام و نام خانوادگی': fullName,
+            'مبلغ': Number(p.amount) || 0,
+            'توضیحات (اختیاری)': p.description || '',
+            'بابت (اختیاری)': babat,
+        };
+    });
+
+    return buildWorkbookBuffer('پی‌استار', mapped, {
+        showMeta: false,
+        columns: PAYSTAR_COLUMNS,
+        textColumns: ['شبا'],
+    });
+};
+
 module.exports = {
     exportPaymentsList,
     exportByProject,
@@ -310,4 +371,5 @@ module.exports = {
     exportCommercialPayments,
     exportMachineryPayments,
     exportSalaryPayments,
+    exportSalaryPaystar,
 };

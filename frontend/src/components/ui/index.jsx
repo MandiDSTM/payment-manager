@@ -35,6 +35,7 @@ export function Button({
     secondary: 'ui-btn-secondary',
     danger: 'ui-btn-danger',
     ghost: 'ui-btn-ghost',
+    paystar: 'ui-btn-paystar',
   }[variant] || 'ui-btn-primary';
 
   return (

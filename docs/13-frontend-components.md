@@ -59,6 +59,7 @@
 ### `PaymentExcelExport`
 `frontend/src/components/PaymentExcelExport.jsx`
 - دکمه خروجی اکسل برای هر نوع پرداخت
+- برای حقوق: دکمه متمایز «خروجی پی‌استار» با ستون شبا / نام / مبلغ / توضیحات / بابت
 - `GET` با `responseType: blob` و دانلود فایل
 - روی صفحات عمومی / تجاری / ماشین‌آلات / حقوق و صفحه Excel استفاده می‌شود
 

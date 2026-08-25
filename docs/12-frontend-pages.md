@@ -132,6 +132,7 @@ Lookups:
   - `PUT /api/salary-payments/:id`
   - `DELETE /api/salary-payments/:id`
 - انتخاب چندتایی در تب‌های «در انتظار پرداخت» و «در جریان پرداخت»: جمع مبلغ در نوار شناور
+- حذف گروهی (admin): `POST /api/salary-payments/bulk-delete`
 - انتقال وضعیت (فقط admin):
   - `POST /api/salary-payments/bulk-status` با `{ ids, status }`
   - از در انتظار پرداخت → در جریان پرداخت و برعکس
@@ -142,6 +143,7 @@ Lookups:
   - قالب: `GET /api/excel/template/salary-payments`
 - خروجی اکسل (همه رکوردها، برای همه نقش‌های خواننده):
   - `GET /api/excel/export/payments/salary`
+  - `GET /api/excel/export/payments/salary-paystar` خروجی پی‌استار (اگر ردیف انتخاب شده باشد همان‌ها، وگرنه فهرست فیلترشده تب جاری)
 
 ---
 

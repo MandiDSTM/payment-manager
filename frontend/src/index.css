@@ -204,6 +204,16 @@ body {
   color: var(--text);
 }
 
+.ui-btn-paystar {
+  background: #0f766e;
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.25);
+}
+
+.ui-btn-paystar:hover:not(:disabled) {
+  background: #0d9488;
+}
+
 .ui-table-wrap {
   overflow-x: auto;
   border-radius: 1.25rem;

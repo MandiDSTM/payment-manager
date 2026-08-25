@@ -453,6 +453,20 @@ const exportSalaryPayments = async (_req, res) => {
     }
 };
 
+const exportSalaryPaystar = async (req, res) => {
+    try {
+        const ids = parseIdList(req.query.ids);
+        const status = req.query.status ? String(req.query.status).trim() : '';
+        const buffer = await paymentExport.exportSalaryPaystar({
+            ids,
+            status: ids ? undefined : status,
+        });
+        sendExcelBuffer(res, buffer, `paystar-salary-${Date.now()}.xlsx`);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 const getLogs = async (_req, res) => {
     try {
         const logs = await getRecentLogs();
@@ -487,5 +501,6 @@ module.exports = {
     exportCommercialPayments,
     exportMachineryPayments,
     exportSalaryPayments,
+    exportSalaryPaystar,
     getLogs,
 };

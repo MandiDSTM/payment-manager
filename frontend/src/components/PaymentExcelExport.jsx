@@ -15,13 +15,16 @@ export default function PaymentExcelExport({
   endpoint,
   filenamePrefix,
   label = 'خروجی اکسل',
+  variant = 'secondary',
+  params,
+  disabled = false,
 }) {
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await api.get(endpoint, { responseType: 'blob' });
+      const res = await api.get(endpoint, { responseType: 'blob', params });
       downloadBlob(res.data, `${filenamePrefix}-${Date.now()}.xlsx`);
     } catch (err) {
       let message = err.message || 'خطا در خروجی اکسل';
@@ -41,7 +44,7 @@ export default function PaymentExcelExport({
   };
 
   return (
-    <Button variant="secondary" onClick={handleExport} disabled={exporting}>
+    <Button variant={variant} onClick={handleExport} disabled={exporting || disabled}>
       {exporting ? 'در حال آماده‌سازی...' : label}
     </Button>
   );

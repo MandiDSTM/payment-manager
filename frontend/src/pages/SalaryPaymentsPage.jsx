@@ -65,6 +65,7 @@ function SalaryPaymentsPage() {
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [moving, setMoving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const searchRef = useRef(null);
 
   const fetchLookups = async () => {
@@ -154,6 +155,23 @@ function SalaryPaymentsPage() {
       alert(err.response?.data?.message || err.message);
     } finally {
       setMoving(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!isAdmin() || selectedIds.length === 0) return;
+    if (!window.confirm(`حذف ${selectedIds.length} پرداخت انتخاب‌شده؟ سریال مجوز آزاد می‌شود.`)) return;
+    setDeleting(true);
+    try {
+      const res = await api.post('/salary-payments/bulk-delete', { ids: selectedIds });
+      alert(res.data.message);
+      setSelectedIds([]);
+      await fetchPayments();
+      await fetchLookups();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -268,6 +286,18 @@ function SalaryPaymentsPage() {
               endpoint="/excel/export/payments/salary"
               filenamePrefix="payments-salary"
             />
+            <PaymentExcelExport
+              endpoint="/excel/export/payments/salary-paystar"
+              filenamePrefix="paystar-salary"
+              label="خروجی پی‌استار"
+              variant="paystar"
+              disabled={filtered.length === 0}
+              params={
+                selectedIds.length > 0
+                  ? { ids: selectedIds.join(',') }
+                  : { ids: filtered.map((p) => p.id).join(',') }
+              }
+            />
             {canEditCommercialPayment() && (
               <>
                 <Button onClick={() => { setEditingId(null); setFormData(emptyForm()); setShowForm(true); }}>
@@ -373,6 +403,11 @@ function SalaryPaymentsPage() {
             {isAdmin() && activeStatus === IN_PROGRESS && (
               <Button disabled={moving} onClick={() => moveSelected(AWAITING_PAYMENT)}>
                 بازگشت به در انتظار پرداخت
+              </Button>
+            )}
+            {isAdmin() && (
+              <Button variant="danger" disabled={moving || deleting} onClick={handleBulkDelete}>
+                {deleting ? 'در حال حذف...' : `حذف انتخاب‌شده (${selectedIds.length})`}
               </Button>
             )}
             <Button variant="secondary" onClick={() => setSelectedIds([])}>لغو انتخاب</Button>

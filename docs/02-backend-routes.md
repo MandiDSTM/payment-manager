@@ -104,6 +104,7 @@
 - `GET /api/salary-payments/:id`
 - `POST /api/salary-payments` (admin/accountant)
 - `POST /api/salary-payments/bulk-status` (admin) — انتقال بین «در انتظار پرداخت» و «در جریان پرداخت»
+- `POST /api/salary-payments/bulk-delete` (admin) — حذف گروهی انتخاب‌شده‌ها و آزاد کردن سریال
 - `PUT /api/salary-payments/:id` (admin/accountant)
 - `DELETE /api/salary-payments/:id` (admin)
 - `POST /api/salary-payments/:id/receipt`
@@ -143,6 +144,7 @@
 - `GET /api/excel/export/payments/commercial` -> `excelController.exportCommercialPayments`
 - `GET /api/excel/export/payments/machinery` -> `excelController.exportMachineryPayments`
 - `GET /api/excel/export/payments/salary` -> `excelController.exportSalaryPayments`
+- `GET /api/excel/export/payments/salary-paystar` -> خروجی پی‌استار حقوق (`ids` یا `status`)
 - `GET /api/excel/export/by-project` -> `excelController.exportByProject`
 - `GET /api/excel/export/by-month` -> `excelController.exportByMonth`
 - `GET /api/excel/export/by-executor` -> `excelController.exportByExecutor`

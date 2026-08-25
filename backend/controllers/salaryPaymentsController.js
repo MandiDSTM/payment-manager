@@ -214,6 +214,50 @@ const remove = async (req, res) => {
     }
 };
 
+const bulkRemove = async (req, res) => {
+    try {
+        const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+        const ids = [...new Set(rawIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+        if (ids.length === 0) {
+            return res.status(400).json({ message: 'هیچ رکوردی انتخاب نشده است' });
+        }
+
+        const rows = await db('salary_payments').whereIn('id', ids);
+        const blocked = [];
+        const deletable = [];
+        rows.forEach((row) => {
+            if (row.status === FINAL_STATUS) {
+                blocked.push({ id: row.id, reason: 'پرداخت شده' });
+                return;
+            }
+            if (row.accounting_document_registered) {
+                blocked.push({ id: row.id, reason: 'سند حسابداری' });
+                return;
+            }
+            deletable.push(row);
+        });
+
+        if (deletable.length > 0) {
+            await db.transaction(async (trx) => {
+                for (const row of deletable) {
+                    await releaseSerial(row.permission_serial_id, trx);
+                    await trx('salary_payments').where({ id: row.id }).del();
+                }
+            });
+        }
+
+        res.json({
+            message: blocked.length > 0
+                ? `${deletable.length} پرداخت حذف شد؛ ${blocked.length} مورد به‌خاطر پرداخت‌شده یا سند حسابداری حذف نشد`
+                : `${deletable.length} پرداخت حذف شد`,
+            deleted: deletable.length,
+            blocked: blocked.map((item) => item.id),
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'خطا در حذف گروهی', error: error.message });
+    }
+};
+
 const bulkUpdateStatus = async (req, res) => {
     try {
         const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
@@ -276,4 +320,4 @@ const uploadReceipt = async (req, res) => {
     }
 };
 
-module.exports = { getAll, getById, create, update, remove, bulkUpdateStatus, uploadReceipt };
+module.exports = { getAll, getById, create, update, remove, bulkRemove, bulkUpdateStatus, uploadReceipt };
