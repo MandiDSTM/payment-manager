@@ -7,6 +7,7 @@ const {
     validateRequiredColumns,
     buildWorkbookBuffer,
 } = require('../../utils/excelHelpers');
+const { insertInChunks, describeSqliteWriteError } = require('../../utils/dbBatch');
 const {
     cellText,
     isEmptyRow,
@@ -251,7 +252,19 @@ const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
         return row;
     });
 
-    await db('payments').insert(payload);
+    try {
+        await insertInChunks(db, 'payments', payload);
+    } catch (error) {
+        const described = describeSqliteWriteError(error);
+        if (described) {
+            return {
+                inserted: 0,
+                errors: [{ row: '—', message: described.message }],
+                aborted: true,
+            };
+        }
+        throw error;
+    }
     return { inserted: payload.length, errors: [], aborted: false };
 };
 

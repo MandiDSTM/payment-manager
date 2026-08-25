@@ -2,6 +2,7 @@ const db = require('../config/db-config');
 const fs = require('fs');
 const { logExcelEvent, getRecentLogs } = require('../utils/excelLog');
 const { sendExcelBuffer } = require('../utils/excelHelpers');
+const { insertInChunks, describeSqliteWriteError } = require('../utils/dbBatch');
 const personnelExcel = require('../services/excel/personnelExcelService');
 const { parseExcelFile: parseMachineryExcel } = require('../services/machineryContactsExcelService');
 const paymentExport = require('../services/excel/paymentExportService');
@@ -17,6 +18,11 @@ const handleImportError = (error) => {
     if (error.message === 'EMPTY_OR_NO_HEADER') {
         return { status: 400, message: 'فایل اکسل خالی است یا سطر هدر ندارد' };
     }
+    if (error.status && error.message) {
+        return { status: error.status, message: error.message };
+    }
+    const described = describeSqliteWriteError(error);
+    if (described) return described;
     return { status: 500, message: error.message };
 };
 
@@ -25,7 +31,7 @@ const importPersonnel = async (req, res) => {
         if (!req.file) return res.status(400).json({ message: 'فایلی انتخاب نشده است' });
 
         const { records, errors } = await personnelExcel.parseImport(req.file.path);
-        if (records.length > 0) await db('personnel_contacts').insert(records);
+        if (records.length > 0) await insertInChunks(db, 'personnel_contacts', records);
 
         const log = await logExcelEvent({
             operationType: 'import_personnel',
@@ -162,7 +168,7 @@ const importMachineryContacts = async (req, res) => {
         if (!req.file) return res.status(400).json({ message: 'فایلی انتخاب نشده است' });
 
         const { records, errors } = await parseMachineryExcel(req.file.path);
-        if (records.length > 0) await db('machinery_contacts').insert(records);
+        if (records.length > 0) await insertInChunks(db, 'machinery_contacts', records);
 
         const log = await logExcelEvent({
             operationType: 'import_machinery_contacts',

@@ -376,6 +376,8 @@
   - ثبت رویدادهای اکسل در `excel_logs` و همچنین گرفتن لاگ‌های اخیر
 - `backend/utils/excelHelpers.js`
   - ساخت workbook با RTL و تنظیم پهنای ستون‌ها
+- `backend/utils/dbBatch.js`
+  - ثبت گروهی اکسل در دسته‌های کوچک برای SQLite
 
 ---
 

@@ -50,6 +50,7 @@
   - پشتیبانی از فایل‌های HR با هدر دو ردیفه و ستون‌های «نام و نام خانوادگی پرسنل»، «کد ملی» (اختیاری)، «نام پدر»، «کد پرسنلی»
   - `parsePreview` + `confirmImport` (مودال انتخاب قبل از ثبت)
   - یکتایی `personnel_code` و در صورت پر بودن `national_id` (داخل فایل و دیتابیس)
+  - ثبت در دسته‌های کوچک تا محدودیت UNION ALL در SQLite رخ ندهد
 - `backend/services/excel/generalPaymentsExcelService.js`
   - ورود پرداخت‌های عمومی با `parsePreview` + `confirmImport`
   - هشدار شبا نامعتبر؛ مبلغ و تاریخ اجباری
@@ -91,4 +92,7 @@
   - ثبت و خواندن لاگ import/exportها در `excel_logs`
 - `backend/utils/excelHelpers.js`
   - ساخت workbook با RTL و تنظیم width ستون‌ها
+- `backend/utils/dbBatch.js`
+  - `insertInChunks` برای ثبت گروهی در SQLite (جلوگیری از خطای UNION ALL بیش از ۵۰۰ ردیف)
+  - تبدیل خطای خام SQL به پیام فارسی
 

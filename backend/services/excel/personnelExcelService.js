@@ -8,6 +8,7 @@ const {
     validateRequiredColumns,
     buildWorkbookBuffer,
 } = require('../../utils/excelHelpers');
+const { insertInChunks, describeSqliteWriteError } = require('../../utils/dbBatch');
 
 const COLUMN_MAP = {
     'کد پرسنلی': ['کد پرسنلی', 'شماره پرسنلی', 'کدپرسنلی', 'شمارهپرسنلی', 'personnel'],
@@ -455,7 +456,7 @@ const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
             last_name: contact.last_name,
             father_name: contact.father_name || null,
             sheba: contact.sheba || '',
-            sheba_needs_review: !!contact.sheba_needs_review,
+            sheba_needs_review: contact.sheba_needs_review ? 1 : 0,
             account_holder_name: contact.account_holder_name,
             mobile: contact.mobile || null,
             city: contact.city || null,
@@ -463,7 +464,25 @@ const confirmImport = async (records, { onlyFullyValid = false } = {}) => {
         };
     });
 
-    await db('personnel_contacts').insert(payload);
+    try {
+        await db.transaction(async (trx) => {
+            await insertInChunks(trx, 'personnel_contacts', payload);
+        });
+    } catch (error) {
+        const described = describeSqliteWriteError(error);
+        if (described?.status === 409) {
+            return {
+                inserted: 0,
+                errors: [{ row: '—', message: described.message }],
+                aborted: true,
+            };
+        }
+        if (described) {
+            throw Object.assign(new Error(described.message), { status: described.status });
+        }
+        throw error;
+    }
+
     return { inserted: payload.length, errors: [], aborted: false };
 };
 
