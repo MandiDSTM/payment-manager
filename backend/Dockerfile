@@ -1,4 +1,4 @@
-FROM node:22-bookworm AS deps
+FROM node:22.23.4-bookworm AS deps
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN npm config set registry https://package-mirror.liara.ir/repository/npm/ --gl
     && npm ci --omit=dev
 
 
-FROM node:22-bookworm-slim
+FROM node:22.23.4-bookworm-slim
 
 WORKDIR /app
 

@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const multer = require('multer');
 const { requireAdmin } = require('../middleware/authorize');
@@ -10,7 +11,7 @@ const {
 const router = express.Router();
 
 const uploadBackup = multer({
-  dest: 'uploads/',
+  dest: path.join(__dirname, '../uploads'),
   limits: { fileSize: 500 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = file.originalname.toLowerCase();

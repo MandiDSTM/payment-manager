@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { login, ROLES } from '../api';
+import { login } from '../api';
 import ThemePicker from '../components/ui/ThemePicker';
 import { Alert, Button, TextInput } from '../components/ui';
 import { useFormKeyboardNav } from '../hooks/useFormKeyboardNav';
@@ -76,11 +76,6 @@ function LoginPage({ onSuccess }) {
             {loading ? 'در حال ورود...' : 'ورود'}
           </Button>
         </form>
-
-        <div className="text-xs ui-muted text-center space-y-1 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-          <p>کاربر پیش‌فرض: <span className="font-mono">admin</span> / رمز: <span className="font-mono">123456</span></p>
-          <p>نقش‌ها: {Object.values(ROLES).map((r) => r.label).join('، ')}</p>
-        </div>
       </div>
     </div>
   );

@@ -159,7 +159,8 @@ async function createUsersTable() {
       table.timestamps(true, true);
     });
     const bcrypt = require('bcryptjs');
-    const hash = await bcrypt.hash('123456', 10);
+    const defaultPassword = require('./config/default-password');
+    const hash = await bcrypt.hash(defaultPassword, 10);
     await db('users').insert([
       { name: 'مدیر سیستم', username: 'admin', password_hash: hash, role: 'admin', is_blocked: false },
       { name: 'حسابدار', username: 'accountant', password_hash: hash, role: 'accountant', is_blocked: false },
@@ -183,7 +184,8 @@ async function migrateUsersAuthColumns() {
     });
 
     const bcrypt = require('bcryptjs');
-    const hash = await bcrypt.hash('123456', 10);
+    const defaultPassword = require('./config/default-password');
+    const hash = await bcrypt.hash(defaultPassword, 10);
     const users = await db('users').select('id', 'role', 'name');
 
     for (const user of users) {
@@ -197,7 +199,7 @@ async function migrateUsersAuthColumns() {
       });
     }
 
-    console.log("ℹ️ ستون‌های احراز هویت به users اضافه شد (رمز پیش‌فرض: 123456).");
+    console.log("ℹ️ ستون‌های احراز هویت به users اضافه شد.");
   }
 }
 

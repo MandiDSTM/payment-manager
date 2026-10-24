@@ -14,7 +14,7 @@ const ROLES = {
     VIEWER: 'viewer',
 };
 
-const getUserRole = (req) => req.user?.role || req.headers['x-user-role'] || ROLES.VIEWER;
+const getUserRole = (req) => req.user?.role || ROLES.VIEWER;
 
 const requireRole = (...allowedRoles) => (req, res, next) => {
     const role = getUserRole(req);

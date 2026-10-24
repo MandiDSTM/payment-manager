@@ -3,14 +3,6 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_API_BASE
   || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 
-export const fileUrl = (relativePath) => {
-  if (!relativePath) return '';
-  const origin = import.meta.env.VITE_FILE_ORIGIN
-    ?? (import.meta.env.DEV ? 'http://localhost:5000' : '');
-  const normalized = String(relativePath).replace(/^\/+/, '');
-  return `${origin}/${normalized}`;
-};
-
 export const ROLES = {
   admin: { value: 'admin', label: 'مدیر' },
   accountant: { value: 'accountant', label: 'حسابدار' },
@@ -21,6 +13,14 @@ let authToken = localStorage.getItem('authToken') || null;
 let currentUser = JSON.parse(localStorage.getItem('authUser') || 'null');
 
 export const getAuthToken = () => authToken;
+
+export const fileUrl = (relativePath) => {
+  if (!relativePath) return '';
+  const filename = String(relativePath).split(/[/\\]/).pop();
+  const token = getAuthToken();
+  const query = token ? `?token=${encodeURIComponent(token)}` : '';
+  return `${API_BASE}/files/receipts/${encodeURIComponent(filename)}${query}`;
+};
 export const getCurrentUser = () => currentUser;
 export const getUserRole = () => currentUser?.role || null;
 

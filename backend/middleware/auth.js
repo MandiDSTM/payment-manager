@@ -4,14 +4,17 @@ const { jwtSecret } = require('../config/auth-config');
 
 const requireAuth = async (req, res, next) => {
     const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    let token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token && req.method === 'GET' && req.path.startsWith('/files/')) {
+        token = typeof req.query.token === 'string' ? req.query.token : null;
+    }
 
     if (!token) {
         return res.status(401).json({ message: 'لطفاً وارد سیستم شوید' });
     }
 
     try {
-        const payload = jwt.verify(token, jwtSecret);
+        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
         const user = await db('users')
             .where({ id: payload.userId })
             .select('id', 'name', 'username', 'role', 'is_blocked')

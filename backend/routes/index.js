@@ -15,6 +15,7 @@ const permissionSerialsRoutes = require('./permissionSerials');
 const excelRoutes = require('./excel');
 const lookupsRoutes = require('./lookups');
 const backupRoutes = require('./backup');
+const filesRoutes = require('./files');
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use(authRoutes);
 
 router.use(requireAuth);
 
+router.use(filesRoutes);
 router.use(usersRoutes);
 router.use(uploadRoutes);
 router.use(paymentsRoutes);

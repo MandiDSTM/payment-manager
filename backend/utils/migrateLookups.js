@@ -44,6 +44,34 @@ const migrateLookups = async () => {
             console.log(`ℹ️ ${moved} پرداخت حقوق از «ثبت نشده» به «در انتظار پرداخت» منتقل شد.`);
         }
     }
+
+    await rotateLegacyDefaultPasswords();
+};
+
+const rotateLegacyDefaultPasswords = async () => {
+    const hasUsers = await db.schema.hasTable('users');
+    const hasHash = hasUsers && await db.schema.hasColumn('users', 'password_hash');
+    if (!hasHash) return;
+
+    const bcrypt = require('bcryptjs');
+    const nextPassword = require('../config/default-password');
+    const nextHash = await bcrypt.hash(nextPassword, 10);
+    const users = await db('users').select('id', 'username', 'password_hash');
+    let updated = 0;
+
+    for (const user of users) {
+        if (!user.password_hash) continue;
+        const alreadyNew = await bcrypt.compare(nextPassword, user.password_hash);
+        if (alreadyNew) continue;
+        const isLegacy = await bcrypt.compare('123456', user.password_hash);
+        if (!isLegacy && user.username !== 'admin') continue;
+        await db('users').where({ id: user.id }).update({ password_hash: nextHash });
+        updated += 1;
+    }
+
+    if (updated) {
+        console.log(`ℹ️ رمز ${updated} کاربر پیش‌فرض به‌روز شد.`);
+    }
 };
 
 module.exports = migrateLookups;

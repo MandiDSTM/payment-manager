@@ -1,6 +1,9 @@
 {
   "name": "payment-manager",
   "private": true,
+  "engines": {
+    "node": ">=22.23.4 <23"
+  },
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
